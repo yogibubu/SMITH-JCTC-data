@@ -1,0 +1,5 @@
+Representation,Mean,95th percentile,Maximum
+Cartesian vibrational,0.10733,0.33673,0.55853
+Delocalized internals,0.04042,0.25869,0.82044
+Local ESALC-I,0.02424,0.09951,0.71758
+Symmetry-adapted ESALC-I,0.03456,0.25471,0.74491

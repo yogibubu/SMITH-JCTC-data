@@ -1,0 +1,13 @@
+System,Coordinate family,Steps,Outcome,Basin behavior
+Water dimer,Pseudobond,8,Converged,H-bond 2--4 retained
+Ammonia--water,Pseudobond,9,Converged,H-bond 3--4 retained (1.877 -> 1.911 AA)
+Ammonia dimer,Quaternion,7,Converged,Equivalent-H exchange only
+Formic acid--water,Pseudobond,11,Converged,H-bond 5--6 retained (1.737 -> 1.663 AA)
+Formamide--water,Pseudobond,16,Converged,Contact 6--9 retained
+Benzene--water,Quaternion,8,Converged,OH--pi basin retained
+Benzene dimer,Quaternion,12,Converged,Equivalent ring-atom exchange only
+Formamide cyclic dimer,Quaternion,7,Converged,Cyclic motif retained
+"Imidazole--water, acceptor",Pseudobond,17,Converged,H-bond 5--10 retained (1.968 -> 1.845 AA)
+"Imidazole--water, donor",Pseudobond,20,Converged,H-bond 9--11 retained (1.880 -> 1.930 AA)
+"Uracil--water, NH donor",Pseudobond,12,Converged,Contact 9--13 retained
+"Uracil--water, carbonyl acceptor",Pseudobond,19,Converged,H-bond 12--15 retained (1.886 -> 1.896 AA)

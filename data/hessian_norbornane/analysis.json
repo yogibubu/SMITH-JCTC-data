@@ -1,0 +1,57 @@
+{
+  "system": "norbornane",
+  "method": "PySCF 2.14.0 RHF/STO-3G analytic Cartesian Hessian",
+  "optimized_energy_hartree": -268.89382384573236,
+  "final_cartesian_gradient_max_hartree_per_bohr": 6.1891e-06,
+  "final_cartesian_gradient_rms_hartree_per_bohr": 2.5413e-06,
+  "geometry_point_group": "C2v",
+  "lowest_vibrational_cartesian_hessian_eigenvalue": 0.0023758795527262532,
+  "primitive_count": 134,
+  "primitive_counts": {
+    "R": 20,
+    "A": 42,
+    "D": 72
+  },
+  "primitive_rank": 51,
+  "delocalized_relative_eigenvalue_threshold": 1e-10,
+  "delocalized_largest_discarded_eigenvalue": 2.04986839153595e-15,
+  "delocalized_minimum_irrep_purity": 0.9999999999999991,
+  "max_symmetry_operation_deviation_angstrom": 4e-12,
+  "sonic_rank": 51,
+  "symmetry_irrep_counts": {
+    "A1": 15,
+    "A2": 11,
+    "B1": 12,
+    "B2": 13
+  },
+  "symmetry_block_metrics": {
+    "intra_irrep_count": 304,
+    "intra_irrep_mean": 0.14497,
+    "intra_irrep_p95": 0.46335,
+    "intra_irrep_max": 0.74491,
+    "inter_irrep_count": 971,
+    "inter_irrep_max": 3.3712236144281925e-08
+  },
+  "metrics": {
+    "Cartesian vibrational": {
+      "mean_off_diagonal": 0.10733,
+      "p95_off_diagonal": 0.33673,
+      "max_off_diagonal": 0.55853
+    },
+    "delocalized internals": {
+      "mean_off_diagonal": 0.04042,
+      "p95_off_diagonal": 0.25869,
+      "max_off_diagonal": 0.82044
+    },
+    "local GSALC-I": {
+      "mean_off_diagonal": 0.02424,
+      "p95_off_diagonal": 0.09951,
+      "max_off_diagonal": 0.71758
+    },
+    "symmetry-adapted GSALC-I": {
+      "mean_off_diagonal": 0.03456,
+      "p95_off_diagonal": 0.25471,
+      "max_off_diagonal": 0.74491
+    }
+  }
+}

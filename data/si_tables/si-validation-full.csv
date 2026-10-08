@@ -1,0 +1,18 @@
+System,Stress test,PG,Rank/closure,Numerical check
+Benzene,Aromatic ring projector,D_6h,30/30; 3 RPck,Delta_PF=6.67x10^-9; epsilon_SALC=2.22x10^-16
+Pyrrole,Heteroaromatic ring projector,C_2v,24/24; 2 RPck,Delta_PF=6.92x10^-9; epsilon_SALC=2.22x10^-16
+Azulene,"Non-benzenoid fused ring, butterfly",C_2v,48/48; 6 RPck,Delta_PF=6.44x10^-9; epsilon_SALC=2.22x10^-16
+Norbornane,Bridged saturated ring,C_2v,51/51; 3 RPck,Delta_PF=6.22x10^-9; epsilon_SALC=2.22x10^-16
+Cubane,High-symmetry cage,O_h,42/42; cyclic bends,Delta_PF=6.41x10^-9; epsilon_SALC=2.22x10^-16
+Ferrocene,D_5h metallocene projector,D_5h,57/57,Delta_PF=6.71x10^-9; epsilon_SALC=3.33x10^-16
+Spiro system,Spiro ring source spaces,D_2,87/87; 6 RPck,Delta_PF=6.97x10^-9; epsilon_SALC=2.22x10^-16
+Cyclooctane,Large-ring puckering,D_2,66/66; 5 RPck,Delta_PF=9.84x10^-9; epsilon_SALC=2.22x10^-16
+Pagodane,Cage and fused-ring source spaces,D_2h,114/114,epsilon_FD=4.02x10^-10; stretches and cyclic bends covered
+Indane,Fused aromatic/alicyclic rings,C_s,51/51,epsilon_FD=4.77x10^-10; butterfly and RPck rows covered
+Saccharin,"Planar fused heterocycle, butterfly--puckering phase",C_s,45/45; 5 RPck,epsilon_FD=3.91x10^-10; full post-projector B rank 45
+Formic acid--water,Weak-complex fragment model,C_1,18/18; 6 protected,three translations plus three orientations; direct B-rank =18
+Water dimer,Hydrogen-bonded fragment model,C_1,12/12; 6 protected,standalone Cartesian input; three translations plus three orientations
+eta^3 allyl--PdCl,Supplied eta^3 ligand center,C_1,24/24; 1 protected,q_eta^3=1.8000 AA; analytic center--atom row retained
+Open weak-complex contacts,Intermolecular and intramolecular pseudobond contacts,"C_s, C_3v, C_1",rank closed,"formic acid--water, water dimer, Li_2--Ar, borane--ammonia and glycine I/II retain contact origin"
+Formamide--water,Closed double-H-bond diagnostic,C_1,21/21 for all three bases,"kappa_rm rel=2.050, 2.778, and 4.753 for pose, contact--pose, and augmented-graph bases"
+Shared-H bridge domains,Primary multicenter hyperedges,"C_2v, D_2h",21/21 and 18/18,"central-proton and diborane tests require complete bridge distances, assigned irreps and full rank of the Wilson B matrix"

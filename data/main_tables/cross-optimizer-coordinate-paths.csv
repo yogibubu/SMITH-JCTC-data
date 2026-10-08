@@ -1,0 +1,15 @@
+System,Contact type,ESALC-I,Gaussian native,Established optimizer
+Water dimer,"C_s, open contact",8,12,9
+Ammonia--water,"C_1, open contact",9,11,4
+Ammonia dimer,"C_1, relative pose",7,10,7
+Formic acid--water,"C_1, open contact",11,12,12
+Formamide--water,"C_1, open contact",16,19,14
+Benzene--water,"C_1, relative pose",8,9,7
+Benzene dimer,"C_1, relative pose",12,19,11
+Formamide cyclic dimer,"C_2h, relative pose",7,7,6
+"Imidazole--water, acceptor","C_1, open contact",17,19,33
+"Imidazole--water, donor","C_1, open contact",20,22,33
+"Uracil--water, NH donor","C_1, open contact",12,13,15
+"Uracil--water, carbonyl acceptor","C_1, open contact",19,15,56
+Total (12 systems),,146,168,207
+Mean per system,,12.17,14.00,17.25

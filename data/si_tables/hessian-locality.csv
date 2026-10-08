@@ -1,0 +1,5 @@
+Representation,Mean,95th percentile,Maximum
+Cartesian vibrational,0.15099,0.39380,0.59591
+Delocalized Gaussian primitives,0.03475,0.21239,0.95506
+ESALC-I coordinate set,0.02794,0.10497,0.74501
+Symmetry-adapted ESALC-I,0.04253,0.31296,0.93174

@@ -1,0 +1,9 @@
+Representation,Useful feature,Relation to the present construction
+Z matrices,"Compact, local descriptions for selected molecular structures.citeBakerHehre1991ZMatrix",Their explicit ordering motivates automatic assignment of complete chemical domains.
+Redundant internal coordinates,"Chemically legible primitives generated from connectivity.citePulayFogarasi1992,Peng1996Redundant,BakkenHelgaker2002,Kudin2001Periodic",They supply a broad source pool; family assignment precedes removal of dependent directions.
+Delocalized internal coordinates,"Automatic independent directions from a global rank reduction.citeBaker1996Delocalized,Reveles2006Equivalent",They provide the Hessian-level control; global combinations can mix different chemical families.
+Natural and generalized natural internals,"Local, interpretable combinations with symmetry-aware reduction.citeFogarasi1992Natural,Berces1997NaturalMetal,VonArnimAhlrichs1999GNIC,SwartBickelhaupt2006StrongWeak","The closest constructive precedent; ESALC-I extends explicit domain ownership to connected rings, fragments, and multicenter sites."
+Fragment translation--rotation coordinates,"Relative fragment translation and orientation without artificial bonds.citeBilleterTurnerThiel2000HDLC,BakerPulay2000Clusters,WangSong2016GeomeTRIC",They supply the fragment-pose family of ESALC-I.
+Generalized internal coordinates,Differentiable expressions for a broad range of geometric variables.citeMarenich2025GIC,Gaussian reads the constructed ESALC-I definitions in this language.
+ESALC-C,"Bond-independent, non-redundant Cartesian directions organized by molecular symmetry.",Provides the complete basis when a chemical primitive assignment is ambiguous.
+ESALC-I,"Local chemical families, exact rank, and complete molecular-symmetry subspaces.",Provides the interpretable basis within a defined molecular basin.

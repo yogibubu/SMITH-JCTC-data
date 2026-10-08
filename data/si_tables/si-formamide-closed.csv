@@ -1,0 +1,4 @@
+Basis,Rank,kappa,kappa_rm rel,f_B,atoms/row,projector distance
+Exponential-map pose,21,8.052,2.050,0.503,4.52,0
+Two-contact tangent diagnostic,21,7.964,2.778,0.429,3.86,3.90x10^-15
+Augmented-graph control,21,8.093,4.753,0.317,2.86,3.05x10^-15

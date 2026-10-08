@@ -1,0 +1,21 @@
+System,Method,Symmetry,Rank,ESALC-I,Redundant
+Cubane,MP2/6-31G(d),O_h,42,3,3
+Saccharin,MP2/6-31G(d),C_s,45,6,6
+Ferrocene,MP2/6-31G(d),D_5h,57,6,7
+Pagodane,MP2/6-31G(d),D_2h,114,7,7
+Sumanene,MP2/6-31G(d),C_3,93,7,6
+C_60,MP2/6-31G(d),I_h,174,5,5
+Alanine I,MP2/6-31G(d),C_1,33,7,8
+2-Deoxyribose,MP2/6-31G(d),C_1,51,5,7
+Dioxane,PBE0/def2-SVP,C_1,36,4,4
+Morpholine,PBE0/def2-SVP,C_1,39,5,6
+Piperazine,PBE0/def2-SVP,C_2h,42,5,6
+Proline,PBE0/def2-SVP,C_1,45,16,18
+Uridine,PBE0/def2-SVP,C_1,81,15,15
+Ibuprofen,PBE0/def2-SVP,C_1,93,9,9
+Tryptophan,PBE0/def2-SVP,C_1,75,10,9
+Artemisinin,PBE0/def2-SVP,C_1,120,11,10
+Glycine,PBE0/def2-SVP,C_1,24,4,4
+Malonaldehyde minimum,PBE0/def2-SVP,C_s,21,7,7
+Total paths (18),,,,132,137
+Average steps,,,,7.33,7.61

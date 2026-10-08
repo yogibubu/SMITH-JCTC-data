@@ -1,0 +1,21 @@
+CN,Local group,Template,Geometry,s,Delta s,s_max,Delta s_min,Rank
+5,D_3h,trigonal bipyramidal,ideal,2.48x10^-17,0.217962,0.12,0.02,12
+5,D_3h,trigonal bipyramidal,distorted,0.007152,0.206418,0.12,0.02,12
+5,C_4v,square pyramidal,ideal,5.30x10^-17,0.217962,0.12,0.02,12
+5,C_4v,square pyramidal,distorted,0.012670,0.202571,0.12,0.02,12
+6,O_h,octahedral,ideal,0,0.375781,0.12,0.02,15
+6,O_h,octahedral,distorted,0.006421,0.364851,0.12,0.02,15
+6,D_3h,trigonal prismatic,ideal,9.72x10^-17,0.375781,0.12,0.02,15
+6,D_3h,trigonal prismatic,distorted,0.005769,0.368504,0.12,0.02,15
+7,D_5h,pentagonal bipyramidal,ideal,0,0.174704,0.12,0.02,18
+7,D_5h,pentagonal bipyramidal,distorted,0.005878,0.165714,0.12,0.02,18
+7,C_3v,capped octahedral,ideal,5.93x10^-17,0.174704,0.12,0.02,18
+7,C_3v,capped octahedral,distorted,0.005464,0.167037,0.12,0.02,18
+8,D_4d,square antiprismatic,ideal,3.85x10^-17,0.296745,0.12,0.02,21
+8,D_4d,square antiprismatic,distorted,0.004965,0.290042,0.12,0.02,21
+8,D_2d,dodecahedral-like,ideal,1.33x10^-16,0.296745,0.12,0.02,21
+8,D_2d,dodecahedral-like,distorted,0.008716,0.284759,0.12,0.02,21
+9,D_3h,tricapped trigonal prismatic,ideal,2.62x10^-17,0.112154,0.12,0.02,24
+9,D_3h,tricapped trigonal prismatic,distorted,0.004833,0.105571,0.12,0.02,24
+9,C_4v,capped square antiprismatic,ideal,0,0.112154,0.12,0.02,24
+9,C_4v,capped square antiprismatic,distorted,0.004434,0.106386,0.12,0.02,24

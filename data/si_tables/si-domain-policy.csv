@@ -1,0 +1,5 @@
+Chemical domain,Constructed description,Reason for the choice
+Covalent region,Local natural-coordinate-like blocks with exact-rank closure,Preserves chemical locality while avoiding null directions.
+Whole fragments,Intrafragment coordinates plus relative center translations and quaternion-derived exponential-map orientations,Represents rigid fragment motion without inventing interfragment bonds.
+Rings and interaction centers,"Ring deformation and puckering; atom--center coordinates for fragment, ring, and eta^n centers",Retains collective motions and non-atomic interaction sites explicitly.
+High coordination,Delocalized 1/R combinations reduced to exact rank and symmetry oriented,Avoids an arbitrary valence graph for cluster-like environments.

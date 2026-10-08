@@ -1,0 +1,451 @@
+#!/usr/bin/env python3
+"""Build the application figures used by the ESALC-I manuscript.
+
+The default mode redraws the figures from the compact JSON data stored in the
+repository.  Use ``--from-qm`` to rebuild the JSON data from the local Gaussian
+DV HF/STO-3G calculation files and the adjacent MATRIX checkout.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import tempfile
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from _matrix_checkout import add_matrix_packages_to_path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "data" / "application_results.json"
+FIGURES = ROOT / "figures"
+QM_DIR = ROOT / "calculations" / "quick_qm"
+BOHR_TO_ANGSTROM = 0.529177210903
+HARTREE_TO_KJMOL = 2625.499638
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--from-qm",
+        action="store_true",
+        help="rebuild data from local Gaussian logs/FCHK and MATRIX ESALC-I",
+    )
+    args = parser.parse_args()
+
+    if args.from_qm:
+        data = build_data_from_qm()
+        DATA.parent.mkdir(parents=True, exist_ok=True)
+        DATA.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    else:
+        data = json.loads(DATA.read_text(encoding="utf-8"))
+
+    FIGURES.mkdir(parents=True, exist_ok=True)
+    plot_hessian_heatmap(data)
+    plot_puckering_scan(data)
+
+
+def build_data_from_qm() -> dict[str, object]:
+    add_matrix_packages_to_path()
+
+    from matrix_chem import preprocess_to_enriched_xyz, write_validation_section
+    from matrix_smith import build_gic_b_matrix, write_gicforge_build_sections
+
+    fchk = parse_fchk(QM_DIR / "cyclobutane_hfsto3g.fchk")
+    atom_symbols = atomic_symbols(fchk["atomic_numbers"])
+    coordinates_angstrom = fchk["coordinates_bohr"] * BOHR_TO_ANGSTROM
+    hessian_cartesian = lower_triangle_to_matrix(
+        fchk["force_constants"],
+        3 * len(atom_symbols),
+    )
+
+    with tempfile.TemporaryDirectory(prefix="neo-figures-") as scratch:
+        scratch_path = Path(scratch)
+        xyz = scratch_path / "cyclobutane_hfsto3g.xyz"
+        xyz.write_text(
+            xyz_text(atom_symbols, coordinates_angstrom, "cyclobutane HF/STO-3G"),
+            encoding="utf-8",
+        )
+
+        matrices: dict[str, np.ndarray] = {}
+        b_matrices: dict[str, object] = {}
+        definitions: dict[str, object] = {}
+        for key, symmetrize in (("neo_contract", False), ("neo_symmetry", True)):
+            xyzin = scratch_path / f"{key}.xyzin"
+            preprocess_to_enriched_xyz(xyz, xyzin)
+            write_validation_section(xyzin)
+            definitions[key] = write_gicforge_build_sections(xyzin, symmetrize=symmetrize)
+            # ORACLE stores its reference geometry in a canonical principal-
+            # axis frame, whereas the Gaussian FCHK Hessian remains in the
+            # original Cartesian frame.  Evaluate every B matrix in that same
+            # FCHK frame before transforming the Hessian.
+            b_matrices[key] = build_gic_b_matrix(
+                definitions[key],
+                coordinates_angstrom=coordinates_angstrom,
+            )
+            matrices[key] = np.asarray(b_matrices[key].rows, dtype=float)
+
+    cartesian_vibrational = vibrational_cartesian_hessian(
+        hessian_cartesian,
+        coordinates_angstrom,
+    )
+    neo_contract = internal_hessian(hessian_cartesian, matrices["neo_contract"])
+    neo_symmetry = internal_hessian(hessian_cartesian, matrices["neo_symmetry"])
+
+    hessian_panels = {
+        "cartesian": coupling_matrix(cartesian_vibrational),
+        "neo_contract": coupling_matrix(neo_contract),
+        "neo_symmetry": coupling_matrix(neo_symmetry),
+    }
+    hessian_metrics = {
+        key: coupling_metrics(value)
+        for key, value in hessian_panels.items()
+    }
+    symmetry_block_metrics = block_coupling_metrics(
+        hessian_panels["neo_symmetry"],
+        tuple(str(value) for value in b_matrices["neo_symmetry"].irreps),
+    )
+
+    scan = parse_puckering_scan(QM_DIR)
+    min_energy = min(point["energy_hartree"] for point in scan)
+    for point in scan:
+        point["relative_kj_mol"] = (
+            point["energy_hartree"] - min_energy
+        ) * HARTREE_TO_KJMOL
+
+    return {
+        "method": "Gaussian HF/STO-3G",
+        "system": "cyclobutane",
+        "hessian": {
+            "rank": 30,
+            "point_group": getattr(definitions["neo_symmetry"], "point_group", "D2d"),
+            "symmetry_coordinates": coordinate_metadata(b_matrices["neo_symmetry"]),
+            "panels": {
+                key: np.round(value, 6).tolist()
+                for key, value in hessian_panels.items()
+            },
+            "metrics": hessian_metrics,
+            "symmetry_block_metrics": symmetry_block_metrics,
+        },
+        "puckering": {
+            "coordinate": "alternating C-ring puckering amplitude / Angstrom",
+            "points": scan,
+        },
+    }
+
+
+def parse_fchk(path: Path) -> dict[str, np.ndarray | list[int]]:
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+
+    def scalar_int(label: str) -> int:
+        for line in lines:
+            if line.startswith(label):
+                return int(line.split()[-1])
+        raise KeyError(label)
+
+    def array(label: str, count: int, kind: type = float) -> np.ndarray:
+        for index, line in enumerate(lines):
+            if line.startswith(label):
+                values: list[float | int] = []
+                cursor = index + 1
+                while len(values) < count:
+                    tokens = lines[cursor].split()
+                    if kind is int:
+                        values.extend(int(token) for token in tokens)
+                    else:
+                        values.extend(float(token.replace("D", "E")) for token in tokens)
+                    cursor += 1
+                return np.asarray(values[:count], dtype=int if kind is int else float)
+        raise KeyError(label)
+
+    atom_count = scalar_int("Number of atoms")
+    cartesian_count = 3 * atom_count
+    force_constant_count = cartesian_count * (cartesian_count + 1) // 2
+    return {
+        "atomic_numbers": array("Atomic numbers", atom_count, int).astype(int),
+        "coordinates_bohr": array("Current cartesian coordinates", cartesian_count).reshape(-1, 3),
+        "force_constants": array("Cartesian Force Constants", force_constant_count),
+    }
+
+
+def atomic_symbols(atomic_numbers: np.ndarray) -> tuple[str, ...]:
+    symbols = {1: "H", 6: "C"}
+    return tuple(symbols[int(number)] for number in atomic_numbers)
+
+
+def xyz_text(symbols: tuple[str, ...], coords: np.ndarray, comment: str) -> str:
+    rows = [str(len(symbols)), comment]
+    rows.extend(
+        f"{symbol} {xyz[0]:.10f} {xyz[1]:.10f} {xyz[2]:.10f}"
+        for symbol, xyz in zip(symbols, coords)
+    )
+    return "\n".join(rows) + "\n"
+
+
+def lower_triangle_to_matrix(values: np.ndarray, size: int) -> np.ndarray:
+    matrix = np.zeros((size, size), dtype=float)
+    cursor = 0
+    for row in range(size):
+        for column in range(row + 1):
+            matrix[row, column] = values[cursor]
+            matrix[column, row] = values[cursor]
+            cursor += 1
+    return matrix
+
+
+def vibrational_cartesian_hessian(hessian: np.ndarray, coords: np.ndarray) -> np.ndarray:
+    center = coords.mean(axis=0)
+    external_rows: list[np.ndarray] = []
+    for axis in range(3):
+        vector = np.zeros_like(coords)
+        vector[:, axis] = 1.0
+        external_rows.append(vector.ravel())
+    for axis_vector in np.eye(3):
+        external_rows.append(np.cross(np.tile(axis_vector, (len(coords), 1)), coords - center).ravel())
+
+    external = np.asarray(external_rows)
+    _, _, vt = np.linalg.svd(external, full_matrices=True)
+    vibrational_basis = vt[6:].T
+    return vibrational_basis.T @ hessian @ vibrational_basis
+
+
+def internal_hessian(hessian: np.ndarray, b_matrix: np.ndarray) -> np.ndarray:
+    inverse = b_matrix.T @ np.linalg.pinv(b_matrix @ b_matrix.T, rcond=1.0e-10)
+    return inverse.T @ hessian @ inverse
+
+
+def coupling_matrix(force_constants: np.ndarray) -> np.ndarray:
+    diagonal_scale = np.sqrt(np.maximum(np.abs(np.diag(force_constants)), 1.0e-20))
+    coupling = np.abs(force_constants) / diagonal_scale[:, None] / diagonal_scale[None, :]
+    np.fill_diagonal(coupling, 0.0)
+    return np.clip(coupling, 0.0, 1.0)
+
+
+def coupling_metrics(coupling: np.ndarray) -> dict[str, float]:
+    upper = coupling[np.triu_indices(coupling.shape[0], 1)]
+    return {
+        "mean_off_diagonal": round(float(upper.mean()), 5),
+        "p95_off_diagonal": round(float(np.quantile(upper, 0.95)), 5),
+        "max_off_diagonal": round(float(upper.max()), 5),
+    }
+
+
+def block_coupling_metrics(
+    coupling: np.ndarray,
+    irreps: tuple[str, ...],
+) -> dict[str, float | int]:
+    intra: list[float] = []
+    inter: list[float] = []
+    for row in range(len(irreps)):
+        for column in range(row + 1, len(irreps)):
+            target = intra if irreps[row] == irreps[column] else inter
+            target.append(float(coupling[row, column]))
+    return {
+        "intra_irrep_count": len(intra),
+        "intra_irrep_mean": round(float(np.mean(intra)), 5),
+        "intra_irrep_p95": round(float(np.quantile(intra, 0.95)), 5),
+        "intra_irrep_max": round(float(np.max(intra)), 5),
+        "inter_irrep_count": len(inter),
+        "inter_irrep_max": float(np.max(inter)),
+    }
+
+
+def coordinate_family(name: str) -> str:
+    """Return the chemically useful family encoded in an ESALC-I row name."""
+    for token, family in (
+        ("RPck", "ring pucker"),
+        ("CyBe", "cyclic bend"),
+        ("Str", "stretch"),
+        ("Bend", "bend"),
+    ):
+        if token in name:
+            return family
+    return "other"
+
+
+def coordinate_metadata(b_matrix: object) -> list[dict[str, str]]:
+    names = tuple(str(value) for value in b_matrix.coordinate_names)
+    irreps = tuple(str(value) for value in b_matrix.irreps)
+    if len(names) != len(irreps):
+        raise ValueError("ESALC-I coordinate-name and irrep metadata have different lengths")
+    return [
+        {"name": name, "irrep": irrep, "family": coordinate_family(name)}
+        for name, irrep in zip(names, irreps)
+    ]
+
+
+def parse_puckering_scan(path: Path) -> list[dict[str, float]]:
+    points: list[dict[str, float]] = []
+    for log_path in sorted(path.glob("cyclobutane_hf_pucker_p*.log")):
+        match = re.search(r"_p([0-9])p([0-9]+)\.log$", log_path.name)
+        if match is None:
+            continue
+        q_value = float(f"{match.group(1)}.{match.group(2)}")
+        if q_value > 0.12:
+            continue
+        energy = parse_scf_energy(log_path)
+        points.append({"q_angstrom": q_value, "energy_hartree": energy})
+    return sorted(points, key=lambda point: point["q_angstrom"])
+
+
+def parse_scf_energy(path: Path) -> float:
+    pattern = re.compile(r"SCF Done:\s+E\([^)]+\)\s+=\s+([-+0-9.Ee]+)")
+    energy = None
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        match = pattern.search(line)
+        if match is not None:
+            energy = float(match.group(1).replace("D", "E"))
+    if energy is None:
+        raise ValueError(f"No SCF energy found in {path}")
+    return energy
+
+
+def plot_hessian_heatmap(data: dict[str, object]) -> None:
+    hessian = data["hessian"]
+    dlc = json.loads((ROOT / "data" / "hessian_cyclobutane" / "dlc_control.json").read_text())
+    panels = {**hessian["panels"], "dlc": dlc["coupling_matrix"]}
+    metrics = {**hessian["metrics"], "dlc": dlc["metrics"]}
+    irrep_order = {name: index for index, name in enumerate(("A1", "A2", "B1", "B2", "E"))}
+    dlc_labels = dlc["symmetry"]["irrep_labels"]
+    dlc_permutation = sorted(
+        range(len(dlc_labels)), key=lambda index: (irrep_order[dlc_labels[index]], index)
+    )
+    dlc_metadata = [
+        {"irrep": dlc_labels[index], "family": "delocalized"} for index in dlc_permutation
+    ]
+    titles = [
+        ("cartesian", "Cartesian vibrational"),
+        ("dlc", "Delocalized internals"),
+        ("neo_contract", "Local ESALC-I"),
+    ]
+
+    fig, axes_grid = plt.subplots(2, 2, figsize=(7.6, 6.35), constrained_layout=True)
+    axes = axes_grid.ravel()
+    for ax, (key, title) in zip(axes[:3], titles):
+        matrix = np.asarray(panels[key], dtype=float)
+        if key == "dlc":
+            matrix = matrix[np.ix_(dlc_permutation, dlc_permutation)]
+        im = ax.imshow(matrix, cmap="magma_r", vmin=0.0, vmax=1.0, interpolation="nearest")
+        ax.set_title(title, fontsize=10)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        metric = metrics[key]
+        ax.text(
+            0.97 if key == "dlc" else 0.03,
+            0.96,
+            f"mean={metric['mean_off_diagonal']:.3f}\np95={metric['p95_off_diagonal']:.3f}",
+            transform=ax.transAxes,
+            ha="right" if key == "dlc" else "left",
+            va="top",
+            fontsize=7.5,
+            color="black",
+            bbox={"boxstyle": "round,pad=0.2", "facecolor": "white", "edgecolor": "0.8", "alpha": 0.9},
+        )
+        if key == "dlc":
+            annotate_symmetry_blocks(ax, dlc_metadata)
+
+    metadata = hessian["symmetry_coordinates"]
+    family_order = {
+        name: index
+        for index, name in enumerate(("stretch", "bend", "cyclic bend", "ring pucker", "other"))
+    }
+    permutation = sorted(
+        range(len(metadata)),
+        key=lambda index: (
+            irrep_order.get(metadata[index]["irrep"], len(irrep_order)),
+            family_order.get(metadata[index]["family"], len(family_order)),
+            index,
+        ),
+    )
+    ordered_metadata = [metadata[index] for index in permutation]
+    symmetry_matrix = np.asarray(panels["neo_symmetry"], dtype=float)
+    ordered_matrix = symmetry_matrix[np.ix_(permutation, permutation)]
+    ordered_ax = axes[3]
+    im = ordered_ax.imshow(
+        ordered_matrix,
+        cmap="magma_r",
+        vmin=0.0,
+        vmax=1.0,
+        interpolation="nearest",
+    )
+    ordered_ax.set_title("Symmetry-adapted ESALC-I\n(irrep, then coordinate type)", fontsize=10)
+    annotate_symmetry_blocks(ordered_ax, ordered_metadata)
+
+    colorbar = fig.colorbar(im, ax=axes, fraction=0.028, pad=0.02)
+    colorbar.set_label(r"$|F_{ij}|/\sqrt{|F_{ii}F_{jj}|}$", fontsize=9)
+    fig.suptitle("Cyclobutane HF/STO-3G Hessian: normalized off-diagonal coupling", fontsize=11)
+    fig.savefig(FIGURES / "sonic_hessian_heatmap.png", dpi=320)
+    fig.savefig(FIGURES / "sonic_hessian_heatmap.pdf")
+    plt.close(fig)
+
+
+def annotate_symmetry_blocks(ax: plt.Axes, metadata: list[dict[str, str]]) -> None:
+    """Label irrep blocks and distinguish coordinate-family subblocks."""
+    irrep_runs: list[tuple[int, int, str]] = []
+    family_boundaries: list[int] = []
+    start = 0
+    for index in range(1, len(metadata) + 1):
+        if index == len(metadata) or metadata[index]["irrep"] != metadata[start]["irrep"]:
+            irrep_runs.append((start, index, metadata[start]["irrep"]))
+            start = index
+        elif metadata[index]["family"] != metadata[index - 1]["family"]:
+            family_boundaries.append(index)
+
+    centers = [(start + stop - 1) / 2.0 for start, stop, _ in irrep_runs]
+    labels = [
+        rf"${irrep[0]}_{{{irrep[1:]}}}$" if len(irrep) > 1 else rf"${irrep}$"
+        for _, _, irrep in irrep_runs
+    ]
+    ax.set_xticks(centers, labels=labels, fontsize=8)
+    ax.set_yticks(centers, labels=labels, fontsize=8)
+    ax.tick_params(top=True, labeltop=True, bottom=False, labelbottom=False, length=0)
+
+    for _, stop, _ in irrep_runs[:-1]:
+        boundary = stop - 0.5
+        ax.axvline(boundary, color="white", lw=1.25)
+        ax.axhline(boundary, color="white", lw=1.25)
+    for stop in family_boundaries:
+        boundary = stop - 0.5
+        ax.axvline(boundary, color="white", lw=0.55, ls=":", alpha=0.9)
+        ax.axhline(boundary, color="white", lw=0.55, ls=":", alpha=0.9)
+
+
+def plot_puckering_scan(data: dict[str, object]) -> None:
+    points = data["puckering"]["points"]
+    q = np.asarray([point["q_angstrom"] for point in points], dtype=float)
+    energy = np.asarray([point["relative_kj_mol"] for point in points], dtype=float)
+
+    fig, ax = plt.subplots(figsize=(5.4, 3.2), constrained_layout=True)
+    ax.plot(q, energy, color="#1f6f78", lw=2.2)
+    ax.scatter(q, energy, s=42, color="#f2a03d", edgecolor="#1f1f1f", linewidth=0.6, zorder=3)
+    minimum = int(np.argmin(energy))
+    ax.scatter([q[minimum]], [energy[minimum]], s=80, marker="D", color="#b52b3a", zorder=4)
+    ax.axvline(q[minimum], color="#b52b3a", lw=1.0, ls="--", alpha=0.8)
+    ax.set_xlabel(r"ring puckering amplitude $q$ / $\AA$", fontsize=10)
+    ax.set_ylabel(r"$\Delta E$ / kJ mol$^{-1}$", fontsize=10)
+    ax.set_title("Frozen-coordinate puckering branch", fontsize=10)
+    ax.grid(True, color="0.88", linewidth=0.8)
+    ax.set_xlim(-0.004, 0.124)
+    ax.set_ylim(bottom=-0.4)
+    ax.tick_params(labelsize=9)
+    ax.text(
+        0.02,
+        0.94,
+        "Gaussian\nHF/STO-3G",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=8,
+        bbox={"boxstyle": "round,pad=0.25", "facecolor": "white", "edgecolor": "0.82", "alpha": 0.92},
+    )
+    fig.savefig(FIGURES / "sonic_puckering_scan.png", dpi=320)
+    fig.savefig(FIGURES / "sonic_puckering_scan.pdf")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,5 @@
+Input mode,Supplied information and construction step
+Complete molecular state,"Topology, primitive coordinates, molecular-symmetry operations and atom permutations are supplied and retained. Ring, fragment, interaction-center, and continuous-perception information may also be supplied."
+Supplied topology,A TOPOLOGY section specifies covalent connectivity; ordinary redundant primitives are then generated from it.
+Supplied primitives,"A PRIMITIVES section specifies the ordered redundant coordinate functions; their atom indices, values, and analytic Wilson B matrix rows are checked against the geometry."
+Cartesian geometry,"The included perception procedure supplies ordinary topology, molecular symmetry with atom permutations, and primitive coordinates."

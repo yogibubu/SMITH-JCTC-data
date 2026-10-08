@@ -1,0 +1,9 @@
+Molecular motif,ESALC-I coordinates,Numerical result
+Formamide transfer,"R_rm NH, R_rm OH, Sigma r, Delta r","For R_rm NH=1.02 and R_rm OH=1.21 AA, Sigma r=2.23 and Delta r=-0.19 AA; sparse rows equal the exact sum/difference."
+Li_2--Ar scan,"Two protected translation axes, polar radius and elliptic quadratic","At (x,y)=(3,4), R=5.000000, (x/7.084)^2+(y/4.718)^2=0.898137, and the elliptic row has six nonzero Cartesian entries."
+XY_3 local block,Projected homogeneous C_3v bend block,"Rank 3/3; ordered rows are A_1, E, E, with exactly one totally symmetric row."
+XY_2 local block,Complete acyclic (2+1) branch domain,"Methylamine retains two in-plane rows, one oriented out-of-plane row, and one six-term normalized collective rotor with exclusive family ownership."
+Weak-complex rotor,Protected fragment translations and orientations,Water-dimer coordinate set rank 12/12; Wilson B matrix shape 12x18; finite rigid-step residual below 0.02 in the six protected variables.
+Ferrocene cyclopentadienyl torsion,"Ring-center/Fe coordinates over 0,9,18,27,36^circ",Rank and analytic-B rank are 57 at all five points; two ring centers persist; sparse density is 0.095--0.101 and the smallest singular value remains above 10^-8.
+Cyclohexane ring flip,Three symmetry-adapted ring-puckering directions,Rank 48/48; three puckering rows and three frozen Gaussian expressions.
+Reduced path subgroup,Same cyclohexane source rebuilt with retained group C_1,Rank remains 48/48; global high-symmetry labels are not imposed along the path and scan torsions remain uncombined.

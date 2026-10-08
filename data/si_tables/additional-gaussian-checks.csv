@@ -1,0 +1,5 @@
+System,Method,ESALC-I steps,Native steps,Final PG,|Delta E|/E_h
+Malonaldehyde (C_2v),"MP2/6-31G(d), Tight",10,10,C_s,2.2x10^-7
+Diborane (D_2h),"MP2/6-31G(d), Tight",5,5,D_2h,7.0x10^-8
+Ferrocene (D_5h),HF/STO-3G,6,6,D_5h,2.6x10^-7
+Ferrocene (D_5d),HF/STO-3G,6,6,D_5d,2.8x10^-7

@@ -1,0 +1,10 @@
+System,ESALC-I rank,Active/Frozen,ESALC-I steps,Native steps,ESALC-I PG path,Native PG path
+Cubane,42/42,2/40,3,3,O_h,O_h
+Saccharin,45/45,30/15,6,6,C_s,C_s
+Ferrocene,57/57,4/53,6,7,D_5h,D_5h
+Pagodane,114/114,18/96,7,7,D_2h,D_2h
+Sumanene minimum,93/93,31/62,7,6,C_3,C_3
+Sumanene planar,93/93,11/82,7,14,D_3h,D_3h\! -> C_1\! -> C_3v
+C_60,174/174,2/172,5,5,I_h,I_h
+Alanine I,33/33,33/0,7,8,C_1,C_1
+2-Deoxyribose,51/51,51/0,5,7,C_1,C_1

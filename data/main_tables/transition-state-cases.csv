@@ -1,0 +1,31 @@
+System,Symmetry / classification,ESALC-I steps,Redundant steps
+Malonaldehyde TS,"C_2v, proton-transfer TS",5,6
+Tropolone,"C_2v, proton-transfer TS",5,5
+Planar sumanene,"D_3h, bowl-inversion TS",7,14
+Baker HCN (#1),HCN -> HNC TS,10,10
+Baker HCCH (#2),isomerization TS,17,13
+Baker H_2CO (#3),dissociation TS,13,21
+Baker CH_3O (#4),rearrangement TS,12,11
+Baker cyclopropyl (#5),ring-opening TS,9,11
+Baker bicyclobutane (#6),ring-opening TS 1,9,8
+Baker bicyclobutane (#7),ring-opening TS 2,29,68
+Baker formyloxyethyl (#8),rearrangement TS,7,14
+Baker case #9,ring-closure TS,18,18
+Baker s-tetrazine (#10),dissociation TS,6,6
+Baker trans-butadiene (#11),isomerization TS,4,5
+Baker ethane + H_2 (#12),H_2 abstraction TS,11,9
+Baker fluoroethane (#13),HF-elimination TS,18,14
+Baker vinyl alcohol (#14),isomerization TS,20,13
+Baker HOCl (#15),linear-bend TS,9,9
+Baker H_2PO_4^- (#16),proton-transfer TS,13,12
+Baker Claisen (#17),rearrangement TS,11,8
+Baker silylene insertion (#18),insertion TS,11,20
+Baker HNCCS (#19),dissociation TS,4,4
+Baker HCONH_3^+ (#20),dissociation TS,23,42
+Baker acrolein (#21),rotational TS,4,5
+Baker HCONHOH (#22),rearrangement TS,8,10
+Baker HNC + H_2 (#23),insertion TS,6,7
+Baker H_2CNH (#24),isomerization TS,10,9
+Baker HCNH_2 (#25),dissociation TS,10,11
+Baker subset (25 cases),,292,358
+Average Baker steps,,11.68,14.32

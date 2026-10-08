@@ -1,0 +1,5 @@
+Quantity,Result
+Optimization steps,32
+Energy--gradient evaluations,47
+Maximum Cartesian gradient / E_h/a_0,1.8498x10^-4
+Root-mean-square Cartesian gradient / E_h/a_0,4.1180x10^-5

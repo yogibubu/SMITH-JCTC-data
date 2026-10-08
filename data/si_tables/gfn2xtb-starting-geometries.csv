@@ -1,0 +1,13 @@
+System,GFN2-xTB iterations,Final energy / E_h
+Water dimer,39,-10.148095861237
+Ammonia--water,43,-9.505231322616
+Ammonia dimer,9,-8.855304465487
+Formamide--water,8,-15.729368709572
+Formic acid--water,11,-16.369999724051
+"Imidazole--water, acceptor",35,-19.376267789565
+"Imidazole--water, donor",34,-19.377553067244
+"Uracil--water, NH donor",57,-29.701535010796
+"Uracil--water, carbonyl acceptor",77,-29.696547792107
+Benzene--water,17,-20.950381937980
+Benzene dimer,36,-31.765815629075
+Formamide cyclic dimer,14,-21.313639924814

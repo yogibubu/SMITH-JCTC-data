@@ -1,0 +1,8 @@
+System,Structural feature,Point group,Rank/closure,Validation result
+Azulene,Non-benzenoid fused ring; butterfly,C_2v,48/48; six puckering rows,epsilon_SALC=2.22x10^-16
+Norbornane,Bridged saturated ring,C_2v,51/51; three puckering rows,epsilon_SALC=2.22x10^-16
+Cubane,High-symmetry cage,O_h,42/42; cyclic bends,epsilon_SALC=2.22x10^-16
+Indane,Fused aromatic/alicyclic rings,C_s,51/51,epsilon_FD=4.77x10^-10; butterfly and puckering rows
+Saccharin,Fused heterocycle; butterfly--puckering,C_s,45/45; five puckering rows,epsilon_FD=3.91x10^-10; post-projector rank 45
+Formic acid--water,Weak-complex fragment pose,C_1,18/18; 6 interfragment,three translations and three orientations; direct B-rank 18
+eta^3 allyl--PdCl,eta^3 ligand center,C_1,24/24; center row,q_eta^3=1.8000 AA; analytic center--atom row retained

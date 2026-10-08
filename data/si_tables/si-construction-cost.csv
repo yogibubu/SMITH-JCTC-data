@@ -1,0 +1,14 @@
+Series,System,N,Candidates,Rank,Build / s,B / s,Peak MiB
+PAH,Benzene,12,30,30,0.131,0.0054,0.23
+PAH,Naphthalene,18,48,48,0.139,0.0093,0.28
+PAH,Anthracene,24,66,66,0.243,0.0139,0.51
+PAH,Phenanthrene,24,66,66,0.211,0.0131,0.52
+PAH,Pyrene,26,78,72,0.256,0.0162,0.59
+PAH,Coronene,36,120,102,0.722,0.0343,1.08
+Ring/cage,Cubane,16,54,42,0.400,0.0139,0.45
+Ring/cage,Norbornane,19,52,51,0.099,0.0120,0.29
+Ring/cage,Cyclooctane,24,66,66,0.142,0.0201,0.53
+Ring/cage,Camphor,27,76,75,0.145,0.0151,0.44
+Ring/cage,Spiro,31,87,87,0.253,0.0225,0.75
+Special,Ferrocene D_5h,21,651,57,3.324,0.0642,2.83
+Special,Ferrocene D_5d,21,656,57,3.182,0.0653,2.59

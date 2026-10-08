@@ -1,0 +1,2201 @@
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{pdflscape}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black}
+
+\newcommand{\ESALCI}{ESALC-I}
+\newcommand{\Bmat}{\mathbf{B}}
+\newcommand{\q}{\mathbf{q}}
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\AtBeginDocument{\renewcommand{\thelstlisting}{S\arabic{lstlisting}}}
+\makeatletter
+\renewcommand*\l@section{\@dottedtocline{1}{0em}{3.2em}}
+\renewcommand*\l@subsection{\@dottedtocline{2}{3.2em}{4.2em}}
+\renewcommand*\l@subsubsection{\@dottedtocline{3}{7.4em}{5.2em}}
+\makeatother
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  rulecolor=\color{black!35},
+  xleftmargin=0.5em,
+  xrightmargin=0.5em
+}
+
+\title{Supporting Information for\\
+Local, Non-Redundant Molecular Coordinates from Disjoint Primitive Families: Symmetry-Adapted Construction and Applications}
+\author{Vincenzo Barone}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+{This Supporting Information (SI) documents extended symmetry-adapted linear combinations
+(ESALCs) in internal (ESALC-I) and Cartesian (ESALC-C) form. The extension
+combines chemically assigned primitive families, local symmetry-adapted
+combinations, exact-rank selection, and molecular-symmetry orientation. This
+SI documents their construction, structural validation, and use in external
+optimization programs.  Continuous chemical perception supplies the molecular state used for
+coordinate construction.\cite{Barone2026Perception}}
+{Gaussian\cite{GaussianGICManual} performs the geometry
+optimizations, and the \href{https://pyscf.org/}{Python-based Simulations
+of Chemistry Framework (PySCF)} supplies electronic energies and gradients
+for the common-potential comparisons.}
+
+\section{Molecular State and Coordinate Construction}
+
+\subsection{Chemical-domain assignment}
+
+{ESALC-I assigns a coordinate language to each chemical domain,
+closes the physical rank, and applies molecular symmetry within each family.
+The primitive pool supports this construction; the final set is non-redundant.
+Table~\ref{tab:si-domain-policy} summarizes the
+domain choices.}
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{{Coordinate descriptions assigned to chemical domains.}}
+\label{tab:si-domain-policy}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.21\linewidth}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}X@{}}
+\toprule
+Chemical domain & Constructed description & Reason for the choice \\
+\midrule
+Covalent region & Local natural-coordinate-like blocks with exact-rank closure
+& Preserves chemical locality while avoiding null directions. \\
+Whole fragments & Intrafragment coordinates plus relative center translations
+and quaternion-derived exponential-map orientations & Represents rigid fragment motion without
+inventing interfragment bonds. \\
+Rings and interaction centers & Ring deformation and puckering; atom--center
+coordinates for fragment, ring, and \(\eta^n\) centers & Retains collective
+motions and non-atomic interaction sites explicitly. \\
+High coordination & Delocalized \(1/R\) combinations reduced to exact rank and
+symmetry oriented & Avoids an arbitrary valence graph for cluster-like
+environments. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+{A basin is a region in which the assigned topology, primitive
+identities, and selected molecular point group remain fixed. The group is the
+highest symmetry intended to be conserved throughout the basin; it can be
+specified explicitly with \texttt{symmetry\_group=...}. It may be a subgroup
+of the initial geometry's full point group. Chemical perception
+identifies domains; primitive functions
+are assigned to these domains, combined into local symmetry-adapted linear
+combinations (SALCs), reduced by singular-value analysis of the Wilson B matrix,
+and oriented under molecular symmetry.  Primitive identities and the number of
+ESALC-I coordinates remain fixed within that basin.  Single-atom out-of-plane
+(SOOP) functions are linear
+Cartesian combinations whose coefficients follow geometry without changing
+the coordinate identities. At saturated tetracoordinate ring atoms,
+only ring-owned endocyclic SOOP directions enter the puckering block; valence
+angles span the other local angular motions, so no separate umbrella
+coordinate is assigned. Poor conditioning or ambiguous primitives prompt
+reassessment of the molecular state.  When the primitive assignment becomes unreliable,
+a complete ESALC-C basis preserves the molecular symmetry and vibrational rank.
+Both coordinate forms extend the SALC construction to complete,
+non-redundant bases of local source directions.
+}
+
+\subsection{Fixed molecular state and Gaussian input}
+
+The perception procedure supplies the molecular topology, ring and
+multicenter domains, fragments, and symmetry operations. It uses continuous measures of bonding,
+coordination, and local equivalence to identify these domains. Primitive
+functions and their family assignments remain fixed in a well-defined
+basin; a change in topology or retained symmetry, or an ambiguous primitive
+assignment, calls for a new construction.
+
+The coordinate builder writes the complete ESALC-I set in a
+\texttt{ReadAllGIC} input for Gaussian 16 Rev. C.02. The input
+includes independent coordinates and frozen symmetry partners. The
+construction and Gaussian optimization therefore use the same coordinate
+definitions.
+
+For disconnected fragments, a reference fragment defines relative
+translations and orientations. Open contacts use local interaction
+distances and orientations; closed contact cycles use relative-fragment
+motion. Shared-proton and group-13 hydride bridges are treated as
+multicenter chemical domains. Each description retains the full
+non-redundant rank.
+
+\subsection{{Coordinate-builder input formats}}
+
+{The builder accepts a Cartesian coordinate file in XYZ format (atom count, comment line, and
+element symbols with Cartesian coordinates in angstrom) followed, when
+needed, by a \texttt{\#SMITH} section. The input format identifier is
+\nolinkurl{matrix.smith.input.v1}. Construction options in that section can
+specify the retained symmetry group and fragment treatment.
+Table~\ref{tab:si-builder-input} distinguishes the four input modes by the
+molecular information supplied with the geometry.}
+
+{
+\begin{table}[htbp]
+\centering
+\small
+\caption{{Molecular information accepted by the coordinate builder.}}
+\label{tab:si-builder-input}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.26\linewidth}X@{}}
+\toprule
+Input mode & Supplied information and construction step \\
+\midrule
+Complete molecular state & Topology, primitive coordinates, molecular-symmetry
+operations and atom permutations are supplied and retained. Ring, fragment,
+interaction-center, and continuous-perception information may also be supplied. \\
+Supplied topology & A \texttt{TOPOLOGY} section specifies covalent connectivity;
+ordinary redundant primitives are then generated from it. \\
+Supplied primitives & A \texttt{PRIMITIVES} section specifies the ordered
+redundant coordinate functions; their atom indices, values, and analytic Wilson
+B matrix rows are checked against the geometry. \\
+Cartesian geometry & The included perception procedure supplies ordinary
+topology, molecular symmetry with atom permutations, and primitive coordinates. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+}
+
+{When topology and primitives are both supplied, their bond
+definitions must agree. A complete molecular state is useful when continuous
+chemical descriptors or special interaction centers have already been
+established by chemical perception. The selected input mode, accepted coordinate options,
+primitive definitions, and symmetry operations accompany the constructed
+coordinate set, so its Wilson B matrix can be evaluated at later geometries
+within the same basin.}
+
+{A minimal water input illustrates the Cartesian format and
+the construction section:}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+3
+Water
+O  0.00000000  0.00000000  0.00000000
+H  0.75860200  0.00000000  0.50428400
+H -0.75860200  0.00000000  0.50428400
+
+#SMITH
+schema = matrix.smith.input.v1
+symmetrize = true
+\end{lstlisting}
+
+
+{A complete norbornane example gives the starting geometry,
+construction directives, and the generated Gaussian 16 Rev. C.02
+\texttt{ReadAllGIC} input. The latter contains all 48 GIC expressions and ten
+component dihedrals used in this export.}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,caption={Complete norbornane construction input.}]
+19
+Norbornane starting geometry for ESALC-I ReadAllGIC export
+C       1.25441300      0.78233900     -0.49340600
+C       0.00000000      1.13336700      0.33992900
+C      -0.00000000     -1.13336700      0.33992900
+C       1.25441300     -0.78233900     -0.49340600
+H       1.20544300      1.20489500     -1.50351600
+H       2.16019200      1.17688700     -0.01817100
+H       1.20544300     -1.20489500     -1.50351600
+H       2.16019200     -1.17688700     -0.01817100
+C       0.00000000      0.00000000      1.38887600
+H      -0.89255700      0.00000000      2.02655300
+H       0.89255700     -0.00000000      2.02655300
+C      -1.25441300      0.78233900     -0.49340600
+H      -2.16019200      1.17688700     -0.01817100
+H      -1.20544300      1.20489500     -1.50351600
+C      -1.25441300     -0.78233900     -0.49340600
+H      -2.16019200     -1.17688700     -0.01817100
+H      -1.20544300     -1.20489500     -1.50351600
+H       0.00000000      2.15523000      0.73149700
+H      -0.00000000     -2.15523000      0.73149700
+
+#SMITH
+schema = matrix.smith.input.v1
+symmetrize = false
+\end{lstlisting}
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,caption={Complete norbornane Gaussian ReadAllGIC input.}]
+#p hf/sto-3g opt=(readallgic,calcfc,maxcycle=80) output=pickett
+
+norbornane ESALC-I ReadAllGIC optimization
+
+0 1
+C       1.25441300      0.78233900     -0.49340600
+C       0.00000000      1.13336700      0.33992900
+C      -0.00000000     -1.13336700      0.33992900
+C       1.25441300     -0.78233900     -0.49340600
+H       1.20544300      1.20489500     -1.50351600
+H       2.16019200      1.17688700     -0.01817100
+H       1.20544300     -1.20489500     -1.50351600
+H       2.16019200     -1.17688700     -0.01817100
+C       0.00000000      0.00000000      1.38887600
+H      -0.89255700      0.00000000      2.02655300
+H       0.89255700     -0.00000000      2.02655300
+C      -1.25441300      0.78233900     -0.49340600
+H      -2.16019200      1.17688700     -0.01817100
+H      -1.20544300      1.20489500     -1.50351600
+C      -1.25441300     -0.78233900     -0.49340600
+H      -2.16019200     -1.17688700     -0.01817100
+H      -1.20544300     -1.20489500     -1.50351600
+H       0.00000000      2.15523000      0.73149700
+H      -0.00000000     -2.15523000      0.73149700
+
+GIC001(Value=0.0) = 0.707106781187*(R(9,10))-0.707106781187*(R(9,11))
+GIC002(Value=2.93156150623) = 0.707106781187*(R(9,10))+0.707106781187*(R(9,11))
+GIC003(Value=1.09633572703) = R(1,6)
+GIC004(Value=1.09633572703) = R(4,8)
+GIC005(Value=1.09633572703) = R(12,13)
+GIC006(Value=1.09633572703) = R(15,16)
+GIC007(Value=1.09602638934) = R(4,7)
+GIC008(Value=1.09602638934) = R(12,14)
+GIC009(Value=1.09602638934) = R(15,17)
+GIC010(Value=1.09602638934) = R(1,5)
+GIC011(Value=1.09431690538) = R(2,18)
+GIC012(Value=1.09431690538) = R(3,19)
+GIC013(Value=1.564678) = R(1,4)
+GIC014(Value=1.564678) = R(12,15)
+GIC015(Value=0.0) = 0.707106781187*(R(3,4))-0.707106781187*(R(3,15))
+GIC016(Value=0.0) = -0.707106781187*(R(1,2))+0.707106781187*(R(2,12))
+GIC017(Value=4.13260235459) = 0.707106781187*(R(3,4))+0.707106781187*(R(3,15))
+GIC018(Value=4.13260235459) = 0.707106781187*(R(1,2))+0.707106781187*(R(2,12))
+GIC019(Value=0.0) = -0.707106781187*(R(2,9))+0.707106781187*(R(3,9))
+GIC020(Value=4.12706024365) = 0.707106781187*(R(2,9))+0.707106781187*(R(3,9))
+GIC021(Value=-0.0573424722848) = 0.816496580928*(A(5,1,6))-0.408248290464*(A(2,1,5))-0.408248290464*(A(2,1,6))
+GIC022(Value=0.0136523036609) = 0.707106781187*(A(2,1,5))-0.707106781187*(A(2,1,6))
+GIC023(Value=-0.0650891780287) = 0.816496580928*(A(5,1,6))-0.408248290464*(A(4,1,5))-0.408248290464*(A(4,1,6))
+GIC024(Value=0.0195508295595) = 0.707106781187*(A(4,1,5))-0.707106781187*(A(4,1,6))
+GIC025(Value=0.0337761539671) = 0.816496580928*(A(18,2,9))-0.408248290464*(A(18,2,12))-0.408248290464*(A(18,2,1))
+GIC026(Value=0.0) = 0.707106781187*(A(18,2,12))-0.707106781187*(A(18,2,1))
+GIC027(Value=0.0337761539671) = 0.816496580928*(A(19,3,9))-0.408248290464*(A(19,3,15))-0.408248290464*(A(19,3,4))
+GIC028(Value=0.0) = 0.707106781187*(A(19,3,15))-0.707106781187*(A(19,3,4))
+GIC029(Value=-0.0650891780287) = 0.816496580928*(A(7,4,8))-0.408248290464*(A(1,4,7))-0.408248290464*(A(1,4,8))
+GIC030(Value=0.0195508295595) = 0.707106781187*(A(1,4,7))-0.707106781187*(A(1,4,8))
+GIC031(Value=-0.0573424722848) = 0.816496580928*(A(7,4,8))-0.408248290464*(A(3,4,7))-0.408248290464*(A(3,4,8))
+GIC032(Value=0.0136523036609) = 0.707106781187*(A(3,4,7))-0.707106781187*(A(3,4,8))
+GIC033(Value=-0.0619062683331) = 0.816496580928*(A(10,9,11))-0.408248290464*(A(2,9,10))-0.408248290464*(A(2,9,11))
+GIC034(Value=0.0) = 0.707106781187*(A(2,9,10))-0.707106781187*(A(2,9,11))
+GIC035(Value=-0.0619062683331) = 0.816496580928*(A(10,9,11))-0.408248290464*(A(3,9,10))-0.408248290464*(A(3,9,11))
+GIC036(Value=0.0) = 0.707106781187*(A(3,9,10))-0.707106781187*(A(3,9,11))
+GIC037(Value=-0.0573424722848) = 0.816496580928*(A(13,12,14))-0.408248290464*(A(2,12,13))-0.408248290464*(A(2,12,14))
+GIC038(Value=-0.0136523036609) = 0.707106781187*(A(2,12,13))-0.707106781187*(A(2,12,14))
+GIC039(Value=-0.0650891780287) = 0.816496580928*(A(13,12,14))-0.408248290464*(A(15,12,13))-0.408248290464*(A(15,12,14))
+GIC040(Value=-0.0195508295595) = 0.707106781187*(A(15,12,13))-0.707106781187*(A(15,12,14))
+GIC041(Value=-0.0573424722848) = 0.816496580928*(A(16,15,17))-0.408248290464*(A(3,15,16))-0.408248290464*(A(3,15,17))
+GIC042(Value=-0.0136523036609) = 0.707106781187*(A(3,15,16))-0.707106781187*(A(3,15,17))
+GIC043(Value=-0.0650891780287) = 0.816496580928*(A(16,15,17))-0.408248290464*(A(12,15,16))-0.408248290464*(A(12,15,17))
+GIC044(Value=-0.0195508295595) = 0.707106781187*(A(12,15,16))-0.707106781187*(A(12,15,17))
+GIC045(Value=-0.0207227541011) = 0.632455532034*(A(3,4,1))-0.511667273602*(A(4,1,2))+0.195439507585*(A(1,2,9))+0.195439507585*(A(2,9,3))-0.511667273602*(A(9,3,4))
+GIC046(Value=-0.063778079142) = 0.37174803446*(A(4,1,2))-0.601500955008*(A(1,2,9))+0.601500955008*(A(2,9,3))-0.37174803446*(A(9,3,4))
+GIC047(Value=-0.0207227541011) = 0.632455532034*(A(3,15,12))-0.511667273602*(A(15,12,2))+0.195439507585*(A(12,2,9))+0.195439507585*(A(2,9,3))-0.511667273602*(A(9,3,15))
+GIC048(Value=-0.063778079142) = 0.37174803446*(A(15,12,2))-0.601500955008*(A(12,2,9))+0.601500955008*(A(2,9,3))-0.37174803446*(A(9,3,15))
+V0001(Value=-55.8772472164) = D(1,2,9,3)
+V0002(Value=55.8772472164) = D(2,9,3,4)
+V0003(Value=-35.2663208258) = D(9,3,4,1)
+V0004(Value=0.0) = D(3,4,1,2)
+V0005(Value=35.2663208258) = D(4,1,2,9)
+V0006(Value=55.8772472164) = D(12,2,9,3)
+V0007(Value=-55.8772472164) = D(2,9,3,15)
+V0008(Value=35.2663208258) = D(9,3,15,12)
+V0009(Value=0.0) = D(3,15,12,2)
+V0010(Value=-35.2663208258) = D(15,12,2,9)
+\end{lstlisting}
+
+\subsection{Formic-acid--water fragment coordinate set}
+
+The eight-atom complex has two fragments and closes at rank \(18/18\).  Six protected rows describe
+the three relative translations and three relative orientations; the remaining
+twelve rows span the intramolecular motions.  The resulting basis retains the intramolecular and fragment-motion families.
+
+The orientation source follows the {translation--rotation
+internal coordinate (TRIC)} construction of Wang and
+Song:\cite{WangSong2016GeomeTRIC} least-squares superposition on a stored body reference defines the
+optimal unit quaternion, its three-component exponential map defines the local
+{coordinate set}, and analytic Cartesian derivatives define the {row of the Wilson B matrix}.  TRIC adds
+six pose primitives to every subunit and delocalizes the augmented set.  The
+coordinate set selects one reference fragment, retains
+only relative pose variables, and protects their identities through rank and
+projection under the declared molecular group.  The translation variables are
+collective internal coordinates with analytic {rows of the Wilson B matrix}; no atomic Cartesian
+variables are appended to the primitive pool in these weak-complex examples.
+The body reference keeps the fragment orientations continuous during local optimization.
+
+{A fixed-contact formic-acid--water structure compares pose,
+contact--pose, and augmented-graph descriptions at common rank.  The two
+hydrogen bonds close an auxiliary graph; the selected contact--pose coordinate set
+retains finite fragment motion without adding valence torsions around that
+cycle.}
+
+\subsection{Closed double-hydrogen-bond diagnostic}
+
+The nine-atom formamide--water geometry contains the contacts
+N1--H3\(\cdots\)O7 and O7--H9\(\cdots\)O6.  Their H\(\cdots\)O distances are
+2.0373 and 1.8876~\AA, and their donor--H--acceptor angles are
+137.20\(^{\circ}\) and 150.26\(^{\circ}\), respectively.  The two contacts
+increase the auxiliary cycle rank by one.  All bases were evaluated on this
+same frozen Cartesian structure with analytic {rows of the Wilson B matrix} and without
+symmetry projection (the complex is \(C_1\)).
+
+The pose basis contains 15 intramolecular and six relative-fragment rows.
+Table~\ref{tab:si-formamide-closed} reports the tangent-space
+comparison for the closed-contact construction: two independent H-bond
+distance rows were combined with four non-null pose directions after
+projection against both the intramolecular and contact subspaces.  {The
+augmented-graph control includes both hydrogen bonds in its valence adjacency.
+The selected coordinate set uses finite pose functions for the residual directions.}
+\(\kappa\) is computed after
+normalizing every full {row of the Wilson B matrix}; \(\kappa_{\rm rel}\) uses the non-null
+singular spectrum remaining after projection against the intramolecular
+space.  Here \(f_B\) is the fraction of nonzero Wilson B matrix elements;
+``atoms/row is the mean number of atoms in each coordinate. The projector
+distance is the spectral norm of the difference from the pure-pose Cartesian
+row-space projector.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Analytic Wilson-matrix comparison for cyclic formamide--water.}
+\label{tab:si-formamide-closed}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Basis & Rank & \(\kappa\) & \(\kappa_{\rm rel}\) & \(f_B\) & atoms/row & projector distance \\
+\midrule
+Exponential-map pose & 21 & 8.052 & 2.050 & 0.503 & 4.52 & 0 \\
+Two-contact tangent diagnostic & 21 & 7.964 & 2.778 & 0.429 & 3.86 & \(3.90\times10^{-15}\) \\
+{Augmented-graph control} & 21 & 8.093 & 4.753 & 0.317 & 2.86 & \(3.05\times10^{-15}\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+{All three descriptions close rank 21.  The contact--pose
+diagnostic has a relative condition number of 2.778, compared with 2.050 for
+pure pose and 4.753 for the augmented graph.}
+
+\subsection{Primary multicenter bridges}
+
+Closed noncovalent contacts and multicenter bonds have distinct chemical roles.  A recognized \(X\)--H--\(X'\) shared-hydrogen motif must be perceived
+as a primary multicenter domain.  Proton
+sharing between N/O/P/S centers and group-13 hydride bridges are separate
+perception classes.  The latter includes homonuclear B--H--B and Al--H--Al and
+heteronuclear Al--H--B.  Its source block contains two separately typed
+center--H distances and the center--H--center bend.  Algorithmic recognition
+is parameterized for qualified group-13 centers (B, Al, Ga, and In, with
+heavier members admitted only when source data are available); raw distance equality and
+center equivalence are not prerequisites.  These primary bridge tests use
+qualified element-pair data, not the van-der-Waals screening reserved for
+auxiliary contacts.  When several bridges share the same
+pair of centers, a bridge-plane coupling completes their {remaining non-null directions of the Wilson B matrix}.
+Symmetry projection forms exchange combinations only when supported by the
+molecular group, and the global rank audit then operates on the complete
+domain.  No bridge edge is passed through the auxiliary-contact cycle gate.
+
+The validation set contains the \(C_{2v}\) shared-proton example (rank 21) and
+\(D_{2h}\) diborane with two B--H--B domains (rank 18).  The diborane test
+verifies all four bridge distances, full rank, assigned irreps, and the
+point-group projector.  Additional homo- and heteronuclear group-13 examples
+cover qualified B, Al, Ga, and In centers with element-pair-scaled distances;
+they include analytic/finite-difference derivatives, atom-relabel covariance,
+and deliberately unequal center--H distances.  Al--H--Al, Al--H--B, and the qualified group-13 centers are represented
+by the same multicenter construction.
+
+
+
+\subsection{\texorpdfstring{$\eta^3$}{eta3} allyl--palladium interaction-center coordinate set}
+
+The ten-atom allyl--PdCl probe uses a frozen \(\eta^3\) center named
+\texttt{C001} and spanning atoms 3--5.  The Pd--center distance is retained
+as an independent coordinate; the coordinate set closes
+at rank \(24/24\), with reference value 1.8000~\AA.  This checks the center-distance coordinate and its derivative.
+
+
+
+These examples give Wilson B matrices of dimensions
+\(18\times24\) and \(24\times30\), respectively.
+
+\section{Domain-First Special-Coordinate Construction}
+
+\subsection{Ownership order and conservative recognition}
+
+The construction order tested in this work is
+\[
+\text{stretches}\longrightarrow\text{special-domain inventory}
+\longrightarrow\text{complete special blocks}
+\longrightarrow\text{ordinary residual coordinate set}.
+\]
+The special inventory contains ring and butterfly domains before local
+\(XY_n\) domains, so an atom or primitive already owned by a cyclic source
+space cannot be reclassified by a center rule.  \(XY_3\) requires a
+four-coordinate acyclic center with three equivalent \(Y\) branches and one
+distinct \(Z\) branch.  \(XY_2\) requires a three-coordinate center satisfying
+the analogous (2+1) partition, and the center must not belong to a cycle.
+Terminal atoms of the same element are exactly permutable.  Nonterminal
+branches must additionally have identical rooted graph environments after
+removing the center.  A fully symmetric \(XY_4\) or \(XY_3\) center has no
+unique \(Z\) and is therefore not relabelled as \(XY_3-Z\) or \(XY_2-Z\),
+respectively.
+
+\subsection{Symmetry-resolved chemisorption block decomposition}
+
+The illustrative main-text construction uses a central atom and the twelve
+vertices of an ideal cuboctahedron for the fcc-like \(M_{13}\) substrate.  A
+triangular face selects a \(C_{3v}\) site subgroup.  The symmetry-resolved
+construction takes \(C_{3v}\) from the frozen state; the corresponding
+\(C_1\) construction has the same block dimensions but no nontrivial irrep
+decomposition.  The declared group remains fixed while the coordinate basis is
+constructed.  In \(C_{3v}\) the
+characters of the 39-dimensional substrate Cartesian representation are
+\[
+ \chi(E)=39,\qquad \chi(C_3)=0,\qquad \chi(\sigma_v)=3,
+\]
+and hence
+\[
+ \Gamma_{M_{13}}^{\mathrm{Cart}}=8A_1+5A_2+13E.
+\]
+Removing the polar translation representation \(A_1+E\) and the axial
+rotation representation \(A_2+E\) gives the 33-dimensional substrate block
+\[
+ \Gamma_{M_{13}}^{\mathrm{Cart}/\mathrm{rigid}}=7A_1+4A_2+11E.
+\]
+The six natural internals of site-oriented NH\(_3\) span \(2A_1+2E\).
+Relative translation and exponential-map orientation transform as \(A_1+E\)
+and \(A_2+E\), respectively.  The complete typed direct sum is
+therefore
+\[
+ (7A_1+4A_2+11E)\oplus(2A_1+2E)\oplus(A_1+A_2+2E)
+ =10A_1+5A_2+15E,
+\]
+with dimension \(33+6+6=45=3(17)-6\).  The Cartesian substrate rows are
+projected and derigidified before combination; they are not placed in a common
+primitive pool with the molecular internals.
+
+The same 33-dimensional substrate space can instead be generated without a
+cluster bonding graph.  The complete \(M_{13}\) pair set contains 78 inverse
+distances.  Its {Wilson B matrix} \(\Bmat_D\) has dimensions \(78\times39\) and
+rank 33.  The source-space projector
+\[
+ \mathbf P_D=\Bmat_D\Bmat_D^+
+\]
+therefore has 33 unit eigenvalues and 45 null eigenvalues.  Retaining the
+unit-eigenvalue eigenvectors and discarding the null space gives 33
+non-redundant inverse-distance combinations.  A thin singular value
+decomposition (SVD) of \(\Bmat_D\), a standard rank-revealing factorization,\cite{GolubReinsch1970}
+or
+deletion of the null eigenvalues of
+\(\Bmat_D\Bmat_D^{\mathsf T}\), recovers the same subspace without explicitly
+forming \(\mathbf P_D\); the latter additionally retains the nonzero metric
+spectrum for conditioning diagnostics.  Symmetry projection gives the same
+\(7A_1+4A_2+11E\) content as the derigidified Cartesian block.
+
+Family-quota selection and the final Cartesian rank audit therefore see three
+owned blocks and preserve the two-dimensional \(E\) subspaces for either
+substrate realization.  This dimensionally closed construction is an
+illustrative specification, not part of the present molecular validation
+{set}.
+
+\subsection{\texorpdfstring{\(XY_3\) and \(XY_2\)}{XY3 and XY2} coordinate blocks}
+
+For \(X(Y_1Y_2Y_3)-Z\), the six primitive valence angles comprise three
+\(ZXY_a\) and three \(Y_aXY_b\) rows.  The resulting five-dimensional
+orthonormal local bending block contains two \(E\)-type combinations of the
+\(ZXY_a\) orbit, the symmetric \(A_1\)-type combination of the
+\(Y_aXY_b\) orbit, and two \(E\)-type combinations of that orbit.  The
+missing symmetric angular direction is redundant with the bonded local frame.
+The torsional coordinate is the common rotation
+\[
+q_{\mathrm{rot}}^{XY_3}=(3N_W)^{-1/2}
+\sum_{w\in W(Z)}\sum_{a=1}^{3}D(w,Z,X,Y_a).
+\]
+Thus the two differential directions present in a three-branch torsional span
+are carried by the local deformation block rather than duplicated as rotor
+coordinates.
+
+For an acyclic \(X(Y_1Y_2)-Z\) center, the owned angular block contains
+\[
+\frac{2A(Y_1,X,Y_2)-A(Z,X,Y_1)-A(Z,X,Y_2)}{\sqrt{6}},
+\qquad
+\frac{A(Z,X,Y_1)-A(Z,X,Y_2)}{\sqrt{2}},
+\]
+together with the oriented out-of-plane row of the same center.  Its collective
+rotor is
+\[
+q_{\mathrm{rot}}^{XY_2}=(2N_W)^{-1/2}
+\sum_{w\in W(Z)}\sum_{a=1}^{2}D(w,Z,X,Y_a).
+\]
+The expected periodicities are three and two for equivalent terminal
+\(XY_3\) and \(XY_2\) groups.  Heterosubstitution, a cyclic \(XY_2\)
+center, a linear branch or the absence of an admissible \(W\) anchor triggers
+an ordinary single-dihedral alternative.
+
+\subsection{Collective-rotor checks}
+
+The Python and Fortran implementations give the same ordered primitive sets
+and Wilson B matrix rows for the \(XY_3\) case. Further checks include a six-term normalized \(XY_2\) rotor for the
+methylamine control, exclusive ownership of the \(XY_2\) out-of-plane row,
+and the expected behavior of cyclic, heterosubstituted, and non-unique-\(Z\) motifs.
+The ring examples retain their family assignments and vibrational rank.
+
+\subsection{Independent and derived coordinates}
+
+Let \(\mathbf p\) be the ordered primitive-source vector and let
+\(\mathbf C\) contain the stored coefficients of the accepted generalized
+coordinates.  The rank-carrying coordinates and their {Wilson B matrix} are
+\begin{equation}
+ \q=\mathbf C\mathbf p,
+ \qquad
+ \Bmat_{\q}=\mathbf C\Bmat_{\mathbf p}.
+ \label{eq:si-stored-coordinate-definition}
+\end{equation}
+A derived coordinate \(\mathbf y=f(\q)\) is evaluated through the stored chain
+rule,
+\[
+ \Bmat_{\mathbf y}
+ =\frac{\partial f}{\partial\q}\Bmat_{\q}
+ =\frac{\partial f}{\partial\q}\mathbf C\Bmat_{\mathbf p}.
+\]
+This covers inverse and exponential distances, trigonometric torsion
+functions, proton-transfer combinations, and polar puckering amplitudes.
+
+\subsection{{Coordinates requested by the user}}
+
+{A \texttt{PROTECT} request names a chemically defined base
+coordinate, such as a distance, torsion, ring-puckering or butterfly motion,
+relative fragment displacement, or atom--center distance. Its analytic Wilson
+B matrix row enters the appropriate chemical family before ordinary rank
+completion. It is retained only if independent of the rows already accepted;
+an incompatible excess of protected directions is reported rather than
+silently replacing another family. A duplicate request is rejected, while a
+user-defined row equivalent to an automatically generated one uses a single
+coordinate with its origin recorded. Molecular symmetry is checked on the
+complete orbit of a requested coordinate before projection.}
+
+{An \texttt{OBSERVABLE} request instead defines a derived
+quantity \(y=f(\q)\), such as an inverse distance, a trigonometric torsion
+function, a proton-transfer combination, or a puckering amplitude. It is
+evaluated by the chain rule above and adds no direction to the active
+coordinate basis. These two requests thus distinguish a motion that must
+participate in rank selection from a quantity evaluated from the selected
+motions.}
+
+{The corresponding request section uses named coordinate
+functions. For example, the following records protect one O--H distance
+and derive its inverse without increasing the rank:}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+SCHEMA smith.semantic.v1
+PROTECT {
+  oh = DISTANCE(1,2)
+}
+OBSERVABLE {
+  inv_oh = INVERSE_DISTANCE(oh)
+}
+\end{lstlisting}
+{These records belong to the optional
+\texttt{SMITH\_SEMANTIC} section of the molecular-state input. Atom indices
+refer to the ordered XYZ geometry; observables refer to named base
+coordinates.}
+
+\subsection{{Hessian transformation away from stationary points}}
+
+{The Wilson B matrix determines the first-order transformation
+of gradients. At a nonstationary geometry the exact Hessian transformation
+also contains coordinate curvature. For independent coordinates \(q_i\), let
+\(B_{ia}=\partial q_i/\partial x_a\),
+\(D_{iab}=\partial^2q_i/(\partial x_a\partial x_b)\), and let
+\(g_i^{(q)}\) and \(H_{ij}^{(q)}\) denote the internal-coordinate gradient
+and Hessian. Then}
+{
+\begin{align}
+g_a^{(x)} &= \sum_i B_{ia}g_i^{(q)}, \\
+H_{ab}^{(x)} &= \sum_{ij}B_{ia}H_{ij}^{(q)}B_{jb}
+                 + \sum_i g_i^{(q)}D_{iab}.
+\end{align}
+{With \(\mathbf C=\sum_i g_i^{(q)}\mathbf D_i\), the
+corresponding Hessian on the full-rank internal tangent space is}
+\[
+\mathbf H^{(q)}=(\Bmat^+)^{\mathsf T}
+                  (\mathbf H^{(x)}-\mathbf C)\Bmat^+ .
+\]
+}
+{At an unconstrained stationary point the gradient vanishes
+and so does \(\mathbf C\). Away from such a point, omitting this term would
+attribute coordinate curvature to the potential-energy surface. Second
+derivatives of the coordinate functions are evaluated only when a subsequent
+analysis requires an off-stationary Hessian; they do not enter ESALC-I rank
+selection or the stored first-derivative coordinate definition.}
+
+{The implemented stationary-point transformation is
+\(\mathbf H^{(q)}=(\Bmat^+)^{\mathsf T}\mathbf H^{(x)}\Bmat^+\).
+It requires the Cartesian Hessian and the Wilson B matrix at that geometry;
+no second coordinate derivatives are evaluated.}
+
+\subsection{Typed exact-rank reduction and local stability}
+
+Suppose \(\Bmat_A\) contains the already accepted rows and \(\Bmat_F\) the
+next homogeneous family.  The Cartesian projector onto the accepted row space
+and the residual family matrix are
+\[
+ \mathbf P_A=\Bmat_A^+\Bmat_A,
+ \qquad
+ \widetilde{\Bmat}_F=\mathbf D_F\Bmat_F(\mathbf I-\mathbf P_A),
+\]
+where \(\mathbf D_F\) normalizes nonzero source rows.  A rank-revealing
+{orthogonal--triangular (QR) factorization} or
+thin SVD of \(\widetilde{\Bmat}_F\) retains its non-null complement without
+mixing coefficients from another family.  The accepted blocks are then
+audited together against the nonlinear-molecule target \(3N-6\) (or \(3N-5\)
+for a linear molecule).
+
+For sequential selection, an ordered normalized row \(\widehat{\mathbf b}_i\)
+is accepted when
+\[
+ \rho_i=\left\|(\mathbf I-\mathbf P_A)
+              \widehat{\mathbf b}_i^{\mathsf T}\right\|_2
+ >\tau_{\mathrm{rank}}.
+\]
+{For the reported construction runs,
+\(\tau_{\mathrm{rank}}=10^{-7}\) for these row-normalized residuals.}
+Absolute and relative singular-value thresholds, the rejected residual, and
+the candidate order are stored.  Normalization prevents a change of length or
+angle units from deciding rank, while the declared order retains the intended
+chemical priority.
+
+Under a state-preserving relabelling \(\pi\),
+\[
+ \Bmat(\pi_*\mathcal P)=\mathbf U_\pi\Bmat(\mathcal P)\mathbf Q_\pi^{\mathsf T},
+\]
+with \(\mathbf Q_\pi\) permuting Cartesian components and \(\mathbf U_\pi\)
+permuting or signing oriented sources.  Canonical atom keys, pivot order, and
+sign conventions therefore preserve the same coordinate space under relabelling. Within a fixed
+molecular state, the {rows of the Wilson B matrix} are continuous functions of geometry.  If every
+accepted/rejected residual, singular-value gap, template score, and symmetry
+closure test has a nonzero margin from its threshold, continuity guarantees a
+neighbourhood with the same accepted families and irreducible subspaces.  A
+vanishing margin or a changed topology/equivalence record is reported as a
+basin boundary that calls for reassessment.
+
+\subsection{Ring source policy}
+
+Ring construction begins from ordered elementary cycles and their
+shared atoms and bonds.  Endocyclic angle sources generate the \(ring deformation\) family,
+whereas \(n-3\) signed curvilinear rows span the local puckering family of an
+isolated \(n\)-membered ring and retain finite Wilson derivatives at
+planarity.  Alternative height and out-of-plane {coordinate sets} support operations
+requiring a more global representation.  Cremer--Pople components and their
+amplitudes and phases are evaluated as conformational descriptors without
+increasing the active rank.
+
+For fused, spiro, bridged, and cage systems, per-cycle candidates are assembled
+with explicit butterfly or other inter-ring rows and reduced once in the
+complete Cartesian tangent space.  Shared motion is retained once, so the
+polycyclic dimension is established globally rather than by adding isolated
+\(n_r-3\) counts.  Ring deformation, puckering, and collective inter-ring
+motion retain separate family labels.  When a minimal {coordinate set} is not closed
+under literal permutation of its labels, molecular symmetry is closed on the
+physical Wilson-row span of the ring family before projection.
+
+\subsection{Exact molecular symmetry and family quotas}
+
+For each homogeneous family \(F\), the frozen operations induce a signed
+representation \(\Gamma_F(g)\).  Closure is checked before the character
+projector
+\[
+ \Pi_\alpha^{(F)}=
+ \frac{\ell_\alpha}{|G|}\sum_{g\in G}
+ \chi_\alpha(g)^*\Gamma_F(g)
+\]
+is applied.  Numerical ranges are extracted by rank-revealing factorization,
+and a canonical pivot/sign gauge fixes the reported basis inside degenerate
+spaces.  {For a multidimensional projected subspace, the projector
+is symmetrized numerically, its columns are visited in the fixed source order,
+independent columns are orthonormalized, and the first coefficient larger in
+magnitude than \(10^{-12}\) is made positive.  This fixes a reproducible basis
+without discarding a degenerate partner.}  For a multidimensional irrep, complete partner subspaces are retained;
+one apparently convenient component cannot be selected alone.  Local
+pseudosymmetry may order ligand or ring sources, but only this exact molecular
+operation set assigns molecular irreducible representations.
+
+{For nearly degenerate rows within one irreducible subspace,
+individual coefficient vectors can change orientation along a geometry path
+while the subspace remains the same. Overlaps between successive projected
+subspaces identify this change; an orthogonal alignment can provide continuous
+coordinate vectors when a subsequent analysis requires them.}
+
+Independent choices from symmetry-projected families can be collectively rank
+deficient even when each family has its requested dimension.  Selection preserves the assigned number of stretch, bend, torsion, ring, and
+fragment directions while reaching global rank. Dependent combinations are
+exchanged within their families; the construction reports any incompatible
+family dimensions.
+
+\subsection{Fixed coordinate definition and stored quantities}
+
+{The construction retains the ordered primitive set
+\(\mathbf p=(p_1,\ldots,p_m)^{\mathsf T}\), its analytic source Wilson B
+matrix \(\Bmat_P\equiv\Bmat_{\mathbf p}\), the coefficient matrix \(\mathbf C\) of the
+selected coordinates, and the molecular-symmetry operations. Equation
+\ref{eq:si-stored-coordinate-definition} gives their values and derivatives
+at a geometry within the assigned basin.}
+{The stored definition also includes each primitive's family,
+the selected and rejected candidates, their rank residuals, protected
+coordinates, numerical tolerances, symmetry operations with atom
+permutations, and the coefficients of local and molecular symmetry
+combinations. These quantities identify the same coordinates whenever the
+molecular state is evaluated again. Sparse analytic source rows are assembled
+through Eq.~\ref{eq:si-stored-coordinate-definition}; a dense Wilson B matrix
+is needed only for the rank and validation checks.}
+{For SOOP and other geometry-dependent primitive functions,
+\(\Bmat_P\) includes the derivatives of their defining coefficients; the
+coordinate identities and the number of retained rows remain fixed. The
+sparse-row density quoted in the validation tables is
+\(\operatorname{nnz}(\Bmat)/(r\,3N)\), where \(r\) is the selected rank.}
+
+{The molecular state supplied to this construction contains the
+topology, rings, fragments, interaction centers, and symmetry operations.
+When present, continuous atom and bond descriptors distinguish chemically
+similar local environments: effective atomic numbers combine nuclear charge
+with coordination, distance-derived bond order, angular rigidity, and
+delocalization; synthon descriptors include charge, covalency, strain, and
+separate first- and second-\(\pi\) contributions. These descriptors guide
+ligand equivalence, ring orientation, and local torsion selection. Their
+perception criteria and reassessment thresholds follow the published method\cite{Barone2026Perception}
+and are implemented in the coordinate builder. The values used for construction remain part of
+the fixed molecular state.}
+
+\subsection{Properties of the ordered rank construction}
+
+{Let \(\mathcal P=(p_1,\ldots,p_m)\) be the candidates in their
+stored family and within-family order, and let \(r=3N-\dim T\), where
+\(T\) is the space of overall translations and rotations. The target is
+\(r=3N-6\) for a nonlinear molecule and \(r=3N-5\) for a linear molecule.
+The following properties refer to a fixed molecular state with a complete
+primitive row space.}
+
+\paragraph{Rank completeness.}
+{Write \(\mathcal R_k=\operatorname{span}\{\mathbf b(p_1),
+\ldots,\mathbf b(p_k)\}\). At step \(k\), projection against the rows already
+retained separates \(\mathbf b(p_k)\) into a component in
+\(\mathcal R_{k-1}\) and an orthogonal residual. Retaining each nonzero
+residual increases the accepted span by one dimension; rejecting a zero
+residual leaves that span unchanged. Induction over the ordered candidates
+therefore gives}
+\begin{equation}
+ {\operatorname{span}\Bmat_{\rm selected}
+ =\operatorname{span}\Bmat_P,\qquad
+ \operatorname{rank}\Bmat_{\rm selected}=\operatorname{rank}\Bmat_P.}
+ \label{eq:si-rank-property}
+\end{equation}
+{The same conclusion holds for the familywise QR or singular-value
+reduction in Sec.~S2.8: each retained residual subspace spans the contribution
+of that family modulo the previously selected span. When
+\(\operatorname{rank}\Bmat_P=r\), Eq.~\ref{eq:si-rank-property} yields exactly
+\(r\) independent directions. A deficient primitive pool or incompatible
+family dimensions is reported as such. The numerical acceptance test uses
+row-normalized residuals and \(\tau_{\rm rank}=10^{-7}\), as specified above.}
+
+\paragraph{Reproducibility for a fixed molecular state.}
+{Primitive generation, family priority, atom ordering,
+row normalization, rank thresholds, and symmetry operations are specified
+before selection. Each subsequent choice is a deterministic function of
+these quantities. A fixed input therefore yields the same selected coordinate
+subspaces and coefficient convention, or the same reported rank or symmetry
+incompatibility. This statement concerns the specified procedure; it does
+not assert that a non-redundant basis is mathematically unique.}
+
+\paragraph{Priority coordinates.}
+{A protected ring, fragment, or interaction-center coordinate
+is considered before ordinary rank-completion candidates. If its analytic
+Wilson row is nonsingular and independent of the protected rows already
+retained, it enters the final span. An ordinary stretch, bend, or torsion
+considered later cannot remove it. If independent protected rows exceed
+\(r\), the requested coordinate model is inconsistent and is reported rather
+than reduced by discarding a protected motion. This follows directly from
+the fixed order and the residual test.}
+
+\paragraph{Atom relabelling.}
+{Consider a permutation \(\pi\) that preserves elements,
+geometry, topology, continuous descriptors, fragments, interaction centers,
+symmetry operations, and ordering keys. Let \(\mathbf Q_\pi\) permute
+Cartesian components and \(\mathbf U_\pi\) permute or sign oriented primitive
+rows. The analytic derivatives obey}
+\begin{equation}
+ {\Bmat_P(\pi\mathbf x)=
+ \mathbf U_\pi\Bmat_P(\mathbf x)\mathbf Q_\pi^{\mathsf T}.}
+ \label{eq:si-relabel-property}
+\end{equation}
+{Both matrices are orthogonal, so row norms, residual ranks,
+and the dimensions of projected symmetry subspaces are preserved. The same
+family and candidate decisions follow in the corresponding order. Thus the
+accepted coordinate spaces and symmetry blocks transform with the atom
+relabeling; their printed signs are fixed by the stored coefficient convention.}
+
+\paragraph{Scaling within a family.}
+{Multiplying every row in one homogeneous source block
+\(\Bmat_F\) by the same nonzero factor \(\lambda\) leaves its normalized
+row directions unchanged up to sign. It also multiplies
+\(\Bmat_F\Bmat_F^{\mathsf T}\) by \(\lambda^2\), without changing its
+eigenspaces. Consequently the retained subspace is unchanged when the
+singular-row and rank thresholds are not crossed. The fixed family order
+keeps this operation within one chemically defined class.}
+
+\paragraph{Local stability.}
+{Suppose topology, atom equivalence, fragment membership,
+symmetry operations, family order, and protected candidates remain fixed
+within a structural neighbourhood of radius \(\delta_{\rm str}\) around
+\(\mathbf x_0\). Let \(f_a(\mathbf x)\) denote the finite set of numerical
+decision quantities, including row norms, rank residuals, singular values,
+template scores, and coefficient-sign choices. For a threshold \(\tau_a\),
+assume a positive margin
+\(\mu_a=|f_a(\mathbf x_0)-\tau_a|>0\) and a local Lipschitz bound
+\(|f_a(\mathbf x)-f_a(\mathbf y)|\leq L_a\|\mathbf x-\mathbf y\|\).
+Every displacement satisfying}
+\begin{equation}
+ {\|\mathbf x-\mathbf x_0\|<\delta,
+ \qquad 0<\delta<\min\!\left(
+ \delta_{\rm str},\min_{a:L_a>0}\frac{\mu_a}{2L_a}\right)}
+ \label{eq:si-local-stability}
+\end{equation}
+{leaves each decision on the same side of its threshold.
+Therefore the primitive identities, retained dimensions, family labels, and
+irreducible subspaces stay fixed, while their analytic Wilson rows vary
+continuously. A zero margin or a changed molecular state calls for reassessment.
+For repeated or nearly degenerate symmetry
+subspaces, continuity concerns the subspace; individual printed coefficient
+vectors may rotate within it, as discussed above.}
+
+\subsection{Deterministic symmetry and derivative evaluation}
+
+{Local symmetry-adapted linear combinations are formed from
+chemically equivalent primitive orbits. The totally symmetric sum is stored
+first, followed by orthogonal difference combinations in a fixed atom order.
+Ring operations must preserve the ring's atom and bond descriptors; a shared
+edge in a fused system is assigned once before the complete ring source space
+is reduced. Ordinary stretches, bends, and exocyclic torsions then fill the
+remaining rank in their declared order. For exocyclic bonds the representative
+dihedral is chosen from the continuous ligand priorities and local
+connectivity; only equivalent signed rows with stable derivatives are combined.}
+
+{For an ordered orbit of \(m\) equivalent sources
+\(p_1,\ldots,p_m\), the stored local combinations are}
+{
+\begin{align}
+ q_{A_1}&=\frac{1}{\sqrt m}\sum_{i=1}^{m}p_i,\\
+ q_{k+1}&=\frac{\sum_{i=1}^{k}p_i-kp_{k+1}}{\sqrt{k(k+1)}},
+ \qquad k=1,\ldots,m-1.
+ \label{eq:si-local-combinations}
+\end{align}
+}
+{The difference rows are orthonormal, have zero coefficient
+sum, and remain within one primitive family. Ligands are first grouped by
+their continuous chemical descriptors and radial shell. The nominal
+equivalence tolerances used in the local-pseudosymmetry tests are
+\(5\times10^{-4}\) for effective atomic number and \(10^{-3}\)~\AA\ for
+center--ligand distance; explicitly relaxed controls are identified in
+Table~\ref{tab:si-named-coordination-controls}.}
+
+{For a high-coordination template \(T\), let \(\mathbf c\)
+and \(\mathbf t_T\) be the sorted ligand-pair cosine vectors of length
+\(M=n(n-1)/2\). The rotationally and permutation-invariant score is}
+\begin{equation}
+ {s_T=\left[\frac{1}{M}\sum_{k=1}^{M}
+ (c_k-t_{T,k})^2\right]^{1/2}.}
+ \label{eq:si-template-score}
+\end{equation}
+{A named template is selected when its score is at most 0.12
+and the gap to the next score is at least 0.02. Other geometries use the
+ligand-equivalence construction with the same final rank test. The score,
+gap, selected coordinate family, and thresholds accompany the fixed
+coordinate definition.}
+
+{The final molecular-symmetry operation acts within a closed
+coordinate family. Its character projector selects the complete subspace of
+each irreducible representation, including every partner of a degenerate
+representation. Projected columns are visited in source order, orthonormalized,
+and assigned a reproducible sign. The recorded operation matrices and atom
+permutations permit the same projector to be evaluated at later geometries
+in the basin. For a geometry path, overlaps between consecutive projected
+subspaces separate a harmless rotation of coefficient vectors from a change
+in the molecular assignment.}
+{Because the operations form a representation on a closed
+family, character orthogonality makes projectors for distinct irreducible
+representations mutually orthogonal and idempotent. Their ranges sum to the
+family's accepted row space. Keeping the full nonzero range of each projector
+therefore preserves both the family rank and complete symmetry partners;
+the final Cartesian rank audit detects dependencies between families.}
+
+{Analytic primitive Wilson rows are evaluated at the current
+geometry and combined with the stored coefficients through
+Eq.~\ref{eq:si-stored-coordinate-definition}. A derived quantity
+\(y=f(\mathbf q)\) uses
+\(\partial y/\partial\mathbf x=(\partial f/\partial\mathbf q)\Bmat\),
+so it does not change rank or family ownership. The first derivative of the
+Wilson B matrix is evaluated only by a calculation that requires a Hessian
+away from a stationary point, using the curvature term of Sec.~S2.7.}
+
+\section{Gaussian Generalized Internal Coordinate (GIC) Input}
+
+\subsection{\texttt{ReadAllGIC} input}
+
+Gaussian 16 Rev. C.02 reads the complete ESALC-I set through
+\texttt{ReadAllGIC}; native calculations use its built-in redundant
+coordinates. The supplied block contains the independent coordinates,
+needed ring and center functions, and frozen symmetry partners. The
+MP2/6-31G(d)\cite{HariharanPople1973Polarization} comparison uses \texttt{CalcHFFC,Tight} in both coordinate
+paths. The \texttt{External} keyword provides energies and gradients for
+the comparisons with a common external potential.
+
+\subsection{Scaling of coordinates for Gaussian}
+
+Wilson-metric normalization is used during rank selection and molecular
+projection because it gives a well-conditioned, scale-neutral independence
+test.  Gaussian's optimizer initializes forces and force constants on the
+conventional scale of its primitive internal coordinates.  The exported {coordinate set}
+therefore applies one diagonal, optimizer-specific rescaling.  If final row
+\(k\) has primitive coefficients \(c_{kp}\), the Gaussian coordinate is
+\begin{equation}
+ q_k^{(G)}=s_k q_k,
+ \qquad
+ s_k=\left(\sum_p c_{kp}^2\right)^{-1/2}.
+ \label{eq:gaussian-optimizer-scaling}
+\end{equation}
+Thus every exported primitive-coefficient vector has unit Euclidean norm.
+The transformation is nonsingular and diagonal, so it preserves the Wilson-row
+space, exact rank, sparsity pattern, family ownership, and irrep assignment.
+It only presents the same ESALC-I {coordinate set} in the scale expected by the Gaussian
+force and initial-Hessian model.  This scaling is applied uniformly to every exported ESALC-I coordinate set.
+
+This point is directly visible for the open-graph water dimer.  Its normalized
+H-bond row is \(2^{-1/2}R_{\mathrm{H\cdots O}}\); Eq.~\ref{eq:gaussian-optimizer-scaling}
+exports it as \(R_{\mathrm{H\cdots O}}\).  The resulting initial force constant
+is 0.04663, equal to the native distance scale, while the complete {coordinate set}
+retains rank 12 and its \(C_s\) irrep partition.  The same single rescaling rule
+is applied to every ESALC-I input in the controlled comparison below.
+
+\subsection{Curvilinear ring coordinates in Gaussian}
+
+The signed local out-of-plane compatibility {coordinate set} uses
+
+\[
+U(j;a,b,c)=\arcsin\!\left[
+\frac{\hat r_{ja}\cdot(\hat r_{jb}\times\hat r_{jc})}
+{|\hat r_{jb}\times\hat r_{jc}|}\right],
+\]
+
+with the stored atom order fixing the sign. Gaussian expresses this
+function through
+\(U(I,J,K,L)\mapsto D(J,I,L,K)\).  The generated signed puckering rows are
+written through algebraically equivalent ordered curvilinear kernels.  The coordinate retains its family, coefficients, rank, and symmetry.  When molecular symmetry is retained, all non-totally
+symmetric ESALC-I rows are written with \texttt{Frozen}; for norbornane this
+leaves 15 active \(A_1\) rows and 36 frozen rows in the full 51-coordinate
+basis.
+
+\section{Construction Times}
+
+\subsection{Reference-path construction-scaling data}
+
+{The polycyclic aromatic hydrocarbon (PAH) series is included in}
+Table~\ref{tab:si-construction-cost}, {which gives} the numerical data underlying the
+construction-cost summary in the main text.  Times are medians of five single-process Python
+runs on a Linux workstation with two AMD EPYC 7543 32-core processors and
+1.0~TiB {random-access memory (RAM)}.  Build time includes construction, rank reduction, optional
+symmetry orientation, and output; the \(\Bmat\) column is one analytic
+evaluation of the stored sparse coordinate set.  Peak Python allocation was measured
+with \href{https://docs.python.org/3/library/tracemalloc.html}{\texttt{tracemalloc}}.  These measurements document
+{benchmark breadth}, sparse evaluation, and the reference algorithm.
+
+For the medium-to-large {Parametrized Model 6 (PM6)} comparison
+summarized in the main text, the
+tetraphenylporphyrin, docetaxel, and paclitaxel ESALC-I paths required 12.31,
+79.99, and 55.79~s, respectively, for 17, 116, and 72 optimization steps.
+These elapsed times were measured in a single process on an Apple~M3~Pro
+(arm64, 36~GB memory, macOS~26.5.2), using the same machine for the
+construction audit.  The timings include the complete Gaussian--PM6 route and
+are provided as hardware-specific execution data; the scientific comparison
+is based on the common PM6 level and the reported optimization paths.
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\caption{Single-process scaling of the coordinate construction.}
+\label{tab:si-construction-cost}
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+Series & System & \(N\) & Candidates & Rank & Build / s & \(\Bmat\) / s & Peak MiB \\
+\midrule
+PAH & Benzene & 12 & 30 & 30 & 0.131 & 0.0054 & 0.23 \\
+PAH & Naphthalene & 18 & 48 & 48 & 0.139 & 0.0093 & 0.28 \\
+PAH & Anthracene & 24 & 66 & 66 & 0.243 & 0.0139 & 0.51 \\
+PAH & Phenanthrene & 24 & 66 & 66 & 0.211 & 0.0131 & 0.52 \\
+PAH & Pyrene & 26 & 78 & 72 & 0.256 & 0.0162 & 0.59 \\
+PAH & Coronene & 36 & 120 & 102 & 0.722 & 0.0343 & 1.08 \\
+Ring/cage & Cubane & 16 & 54 & 42 & 0.400 & 0.0139 & 0.45 \\
+Ring/cage & Norbornane & 19 & 52 & 51 & 0.099 & 0.0120 & 0.29 \\
+Ring/cage & Cyclooctane & 24 & 66 & 66 & 0.142 & 0.0201 & 0.53 \\
+Ring/cage & Camphor & 27 & 76 & 75 & 0.145 & 0.0151 & 0.44 \\
+Ring/cage & Spiro & 31 & 87 & 87 & 0.253 & 0.0225 & 0.75 \\
+Special & Ferrocene \(D_{5h}\) & 21 & 651 & 57 & 3.324 & 0.0642 & 2.83 \\
+Special & Ferrocene \(D_{5d}\) & 21 & 656 & 57 & 3.182 & 0.0653 & 2.59 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+{
+\section{Construction and Ring-Coordinate Validation}
+
+The {validation set} underlying the representative
+main-text table is collected in Table~\ref{tab:si-validation-full}.
+Horizontal rules separate the individual systems so that rank closure,
+coordinate family and numerical audit can be followed independently.
+Here SALC denotes a symmetry-adapted linear combination, \(RPck\) denotes
+a ring-puckering coordinate, and \(\Delta_\mathrm{PF}\) is the
+Python--Fortran difference in the numerical check. The point group (PG)
+and finite-difference (FD) errors follow the definitions above.
+
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.14\linewidth}>{\raggedright\arraybackslash}p{0.24\linewidth}>{\raggedright\arraybackslash}p{0.07\linewidth}>{\raggedright\arraybackslash}p{0.15\linewidth}>{\raggedright\arraybackslash}p{0.31\linewidth}@{}}
+\caption{Rank, symmetry, and derivative checks for the ESALC-I construction.}\label{tab:si-validation-full}\\
+\toprule
+System & Stress test & PG & Rank/closure & Numerical check \\
+\midrule
+\endfirsthead
+\toprule
+System & Stress test & PG & Rank/closure & Numerical check \\
+\midrule
+\endhead
+Benzene & Aromatic ring projector & \(D_{6h}\) & 30/30; 3 \(RPck\) & \(\Delta_\mathrm{PF}=6.67\times10^{-9}\); \(\epsilon_\mathrm{SALC}=2.22\times10^{-16}\) \\
+\midrule
+Pyrrole & Heteroaromatic ring projector & \(C_{2v}\) & 24/24; 2 \(RPck\) & \(\Delta_\mathrm{PF}=6.92\times10^{-9}\); \(\epsilon_\mathrm{SALC}=2.22\times10^{-16}\) \\
+\midrule
+Azulene & Non-benzenoid fused ring, butterfly & \(C_{2v}\) & 48/48; 6 \(RPck\) & \(\Delta_\mathrm{PF}=6.44\times10^{-9}\); \(\epsilon_\mathrm{SALC}=2.22\times10^{-16}\) \\
+\midrule
+Norbornane & Bridged saturated ring & \(C_{2v}\) & 51/51; 3 \(RPck\) & \(\Delta_\mathrm{PF}=6.22\times10^{-9}\); \(\epsilon_\mathrm{SALC}=2.22\times10^{-16}\) \\
+\midrule
+Cubane & High-symmetry cage & \(O_h\) & 42/42; cyclic bends & \(\Delta_\mathrm{PF}=6.41\times10^{-9}\); \(\epsilon_\mathrm{SALC}=2.22\times10^{-16}\) \\
+\midrule
+Ferrocene & \(D_{5h}\) metallocene projector & \(D_{5h}\) & 57/57 & \(\Delta_\mathrm{PF}=6.71\times10^{-9}\); \(\epsilon_\mathrm{SALC}=3.33\times10^{-16}\) \\
+\midrule
+Spiro system & Spiro ring source spaces & \(D_2\) & 87/87; 6 \(RPck\) & \(\Delta_\mathrm{PF}=6.97\times10^{-9}\); \(\epsilon_\mathrm{SALC}=2.22\times10^{-16}\) \\
+\midrule
+Cyclooctane & Large-ring puckering & \(D_2\) & 66/66; 5 \(RPck\) & \(\Delta_\mathrm{PF}=9.84\times10^{-9}\); \(\epsilon_\mathrm{SALC}=2.22\times10^{-16}\) \\
+\midrule
+Pagodane & Cage and fused-ring source spaces & \(D_{2h}\) & 114/114 & \(\epsilon_\mathrm{FD}=4.02\times10^{-10}\); stretches and cyclic bends covered \\
+\midrule
+Indane & Fused aromatic/alicyclic rings & \(C_s\) & 51/51 & \(\epsilon_\mathrm{FD}=4.77\times10^{-10}\); butterfly and \(RPck\) rows covered \\
+\midrule
+Saccharin & Planar fused heterocycle, butterfly--puckering phase & \(C_s\) & 45/45; 5 \(RPck\) & \(\epsilon_\mathrm{FD}=3.91\times10^{-10}\); full post-projector \(\Bmat\) rank 45 \\
+\midrule
+Formic acid--water & Weak-complex fragment model & \(C_1\) & 18/18; 6 protected & three translations plus three orientations; direct \(\Bmat\)-rank \(=18\) \\
+\midrule
+Water dimer & Hydrogen-bonded fragment model & \(C_1\) & 12/12; 6 protected & standalone Cartesian input; three translations plus three orientations \\
+\midrule
+\(\eta^3\) allyl--PdCl & Supplied \(\eta^3\) ligand center & \(C_1\) & 24/24; 1 protected & \(q_{\eta^3}=1.8000\)~\AA; analytic center--atom row retained \\
+\midrule
+Open weak-complex contacts & Intermolecular and intramolecular pseudobond contacts & \(C_s\), \(C_{3v}\), \(C_1\) & rank closed & formic acid--water, water dimer, Li\(_2\)--Ar, borane--ammonia and glycine I/II retain contact origin \\
+\midrule
+Formamide--water & Closed double-H-bond diagnostic & \(C_1\) & 21/21 for all three bases & \(\kappa_{\rm rel}=2.050\), 2.778, and 4.753 for pose, contact--pose, and {augmented-graph bases} \\
+\midrule
+Shared-H bridge domains & Primary multicenter hyperedges & \(C_{2v}\), \(D_{2h}\) & 21/21 and 18/18 & central-proton and diborane tests require complete bridge distances, assigned irreps and {full rank of the Wilson B matrix} \\
+\midrule
+\bottomrule
+\end{longtable}
+\normalsize
+
+Three molecular structures illustrate the ring-coordinate construction.  The
+first is pagodane, \(\mathrm{C}_{20}\mathrm{H}_{20}\): structural perception identifies 50 covalent bonds, 11 rings, no aromatic atoms and a
+\(D_{2h}\) reference assignment.  The primitive pool and ESALC-I basis both have Cartesian rank 114.  The second is indane,
+\(\mathrm{C}_{9}\mathrm{H}_{10}\): structural perception identifies 20 bonds, two fused
+rings, six aromatic atoms and a \(C_s\) reference assignment, while ESALC-I closes
+at rank 51.
+
+The third example is planar saccharin, retained specifically as a fused-ring
+phase and global-rank validation.  Its \(C_s\) coordinate set contains one butterfly
+and five ring-puckering coordinates, all in \(A''\), and closes at rank 45/45.
+The butterfly coordinate is
+\begin{equation}
+ q_{\mathrm{bf}}=2^{-1/2}\!\left[D(6,1,2,13)-D(16,1,2,3)\right],
+\end{equation}
+whose relative minus sign supplies the inter-ring direction missing from the
+five \(RPck\) rows.  Replacing it by the corresponding sum lowers the rank of
+these six rows from six to five.  The validation therefore checks the complete
+post-symmetry Cartesian \(\Bmat\), rather than accepting six individually
+well-formed but collectively dependent expressions.
+
+Central finite differences of every final ESALC-I row give maximum absolute
+errors of \(4.02\times10^{-10}\), \(4.77\times10^{-10}\), and
+\(3.91\times10^{-10}\) for pagodane, indane, and saccharin, respectively.  The
+audit follows the complete chain rule and includes stretch, bend, cyclic-bend,
+butterfly, and puckering families.
+
+For every one of the 114 pagodane and 51 indane coordinates, the Cartesian
+fingerprint is
+\[
+ \Delta\mathbf{x}_k=\mathbf{B}_0^+\mathbf{e}_k\Delta q_k,
+ \qquad \mathbf{x}_{\pm}=\mathbf{x}_0\pm\Delta\mathbf{x}_k .
+\]
+An optional minimum-mass-norm form uses
+\(\mathbf{M}^{-1/2}(\mathbf{B}_0\mathbf{M}^{-1/2})^+\); its origin records
+average, default-isotope, Hessian, or named-isotopologue masses.  Step reduction
+preserves the frozen topology and orientation, limits the largest displacement
+to 0.10~\AA, and limits each reference-bond change to 15\%.  These symmetric
+frames freeze all other ESALC-I coordinates only to first order and are not nonlinear
+internal-to-Cartesian realizations.
+
+Near-planar fused rings are covered by signed puckering and butterfly rows whose
+first derivatives remain finite at the planar reference.  Symmetry acts on
+their physical Wilson-row spaces within the corresponding ring families, and
+the complete \(\Bmat\) rank is then checked across all families.  Indane tests
+the derivative accuracy of this construction; saccharin tests the coupled case
+in which butterfly and puckering rows share the same molecular irrep.  Together
+they verify continuity, intrafamily projection, and global rank closure.
+
+The diagnostic record contains the right-inverse metric, mass
+origin, normalized-row conditioning, Cartesian amplification, participation
+ratio, significantly moving atoms, dominant atom, local domain and pseudogroup,
+independent local/global total-symmetry labels, canonical ring order, primitive
+coefficients, and topology-check count.  Display amplitudes are independently
+normalized for viewing.
+
+\subsection{Ring Puckering Branch}
+
+{Figure~\ref{fig:si-cyclobutane-pucker} shows the fixed-frame
+cyclobutane scan generated from one retained ring-puckering coordinate.}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/sonic_puckering_scan.pdf}
+\caption{{Cyclobutane puckering energy along the fixed-frame
+ESALC-I coordinate at the HF/STO-3G level.}}
+\label{fig:si-cyclobutane-pucker}
+\end{figure}
+
+
+{The cyclobutane \(D_{2d}\) puckering profile at HF/STO-3G has a
+minimum near \(q=0.04\)~\AA{} and rises smoothly on either side.}
+A {discrete-variable-representation (DVR) or potential-energy-surface
+(PES)} model may replace this base coordinate by a Cremer--Pople
+amplitude or phase while retaining the frozen analytic chain rule.
+
+
+\subsection{Portable Chair-to-Boat Puckering Export}
+
+The cyclohexane ring-flip calculation tests a generated puckering path.
+From graph and geometry, ESALC-I generates a fixed-frame path from the chair
+\(q_3\) component to the boat \(q_2\) component.  Each point is exported both
+as ordinary Cartesians and as an automatically generated \texttt{ReadAllGIC}
+coordinate set, then evaluated with the {Becke three-parameter
+Lee--Yang--Parr (B3LYP)} functional and 6-31+G* basis.
+
+All five coordinate sets have rank \(48/48\).  Their Cartesian and GIC energies differ
+by at most \(3.0\times10^{-3}\,\mu E_h\), or about
+\(8\times10^{-6}\)~kJ~mol\(^{-1}\). The energy rise reflects the
+unrelaxed fixed-frame deformation.
+
+Figure~\ref{fig:si-cyclohexane-export} compares the five-point energy
+traces and their differences. The two representations follow the same
+fixed-frame deformation.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/cyclohexane_puckering_equivalence.pdf}
+\caption{{Cyclohexane chair-to-boat fixed-frame scan at
+B3LYP/6-31+G*. Cartesian and generated ReadAllGIC inputs give equivalent
+energies; the lower panel shows their difference.}}
+\label{fig:si-cyclohexane-export}
+\end{figure}
+
+{Independent PBE0/def2-SVP single-point calculations with
+ORCA\cite{Neese2020ORCA} and Molpro\cite{Werner2020Molpro} on three of these
+geometries give the relative energies in
+Table~\ref{tab:si-cyclohexane-independent}. The unrelaxed path is a test of
+portable geometries, not a chair-to-boat barrier.}
+
+\begin{table}[htbp]
+\centering
+\caption{{Cyclohexane fixed-frame energies from two independent programs at PBE0/def2-SVP.}}
+\label{tab:si-cyclohexane-independent}
+\begin{tabular}{crrrr}
+\toprule
+Path point & ORCA $E/E_h$ & ORCA $\Delta E$ & Molpro $E/E_h$ & Molpro $\Delta E$ \\
+\midrule
+$p_{00}$ ($\lambda=0.00$) & $-235.422463982$ & 0.000 & $-235.422142275$ & 0.000 \\
+$p_{02}$ ($\lambda=0.50$) & $-235.321345943$ & 265.485 & $-235.321038853$ & 265.447 \\
+$p_{04}$ ($\lambda=1.00$) & $-235.103704314$ & 836.903 & $-235.103335256$ & 837.028 \\
+\bottomrule
+\end{tabular}
+\par\smallskip\footnotesize $\Delta E$ is in kJ~mol$^{-1}$ relative to $p_{00}$.
+\end{table}
+
+
+
+\clearpage
+\section{Stationary-Hessian Comparisons}
+
+\subsection{Stationary-Hessian locality control}
+
+The heat maps in the main text use the optimized cyclobutane HF/STO-3G
+stationary point; the
+corresponding Gaussian route is \texttt{HF/STO-3G Opt Freq NoSymm}.  The same Cartesian
+Hessian is used for every representation.  Six external directions are removed by an
+SVD to form the 30-dimensional orthonormal Cartesian vibrational control.  For
+{the delocalized control, the Gaussian coordinate definitions supply
+72 native primitives: 12 distances, 24 angles, and 36 dihedrals.  Their
+Wilson B matrix is evaluated at the stationary geometry in bohr and
+radians using the analytic derivatives in geomeTRIC~1.1.1.\cite{WangSong2016GeomeTRIC}
+The 30 eigenvectors of \(\Bmat\Bmat^{\mathsf T}\) with positive
+eigenvalues above \(10^{-10}\) of the largest form the delocalized basis.
+{The recovered molecular group is \(D_{2d}\); its eight
+operations match the stationary geometry within \(1.7\times10^{-8}\)~\AA.
+Projection of
+the 30 delocalized directions gives six \(A_1\), two \(A_2\), three \(B_1\),
+five \(B_2\), and fourteen \(E\) partner directions.  The seven nearly
+degenerate eigenvalue pairs are the \(E\) subspaces; rotating their partners
+preserves molecular symmetry while changing individual force-matrix elements.
+The displayed matrix orders these directions by \(D_{2d}\) irrep.}}  For
+each ESALC-I construction, the frozen analytic {Wilson B matrix} is evaluated at
+the stationary Cartesian geometry and defines the
+Cartesian realization
+\[
+ \mathbf A=\Bmat^{\mathsf T}
+ (\Bmat\Bmat^{\mathsf T})^+,
+ \qquad
+\mathbf F_q=\mathbf A^{\mathsf T}\mathbf F_x\mathbf A.
+\]
+This frame match is essential: the internal reference is stored in a canonical
+principal-axis orientation, whereas the Cartesian Hessian remains in the
+Gaussian Cartesian frame.  Combining the latter with a {Wilson B matrix} evaluated
+in the former would be an invalid rotation mismatch.  In the matched frame the
+raw \texttt{NoSymm} Hessian is already invariant under the recovered \(D_{2d}\)
+operations to a relative Frobenius residual below \(7.1\times10^{-9}\), so no
+group averaging is applied.
+The optimized reference has negligible forces, so this stationary-point
+transformation requires only the stored first-order {Wilson B matrix}.  Table
+\ref{tab:hessian-locality} reports the off-diagonal statistics plotted in the
+main text; diagonal elements are excluded.
+{The second and fourth maps group delocalized and
+symmetry-adapted ESALC-I rows by \(D_{2d}\) irrep.  The fourth also groups
+rows by coordinate family (stretch, bend, cyclic bend, and ring pucker);
+solid and dotted separators mark the respective boundaries.}
+
+\begin{table}[htbp]
+\centering
+\caption{Normalized off-diagonal Hessian coupling for cyclobutane.  All
+representations have dimension and rank 30.}
+\label{tab:hessian-locality}
+\begin{tabular}{lccc}
+\toprule
+Representation & Mean & 95th percentile & Maximum \\
+\midrule
+Cartesian vibrational & 0.15099 & 0.39380 & 0.59591 \\
+{Delocalized Gaussian primitives} & {0.03475} & {0.21239} & {0.95506} \\
+ESALC-I coordinate set & 0.02794 & 0.10497 & 0.74501 \\
+Symmetry-adapted ESALC-I & 0.04253 & 0.31296 & 0.93174 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For the symmetry-oriented basis, the 120 allowed intra-irrep entries have
+mean 0.15419, 95th percentile 0.51606, and maximum 0.93174.  The remaining 315
+inter-irrep entries have maximum unrounded magnitude
+\(4.6\times10^{-8}\) and therefore plot as exact zero at six-decimal storage
+precision.  Symmetry orientation thus produces disjoint blocks while retaining the
+chosen coordinate basis within each block.
+
+Isolated chemically meaningful couplings remain in the maximum. The mean and
+percentile quantify overall coupling, and symmetry gives the visible block
+structure.
+{Primitive internal functions give the most nearly diagonal
+chemically local force-constant representation, but are redundant.  The
+delocalized control removes redundancy by combining all primitive families.
+ESALC-I keeps the families distinct through local SALCs and ring-deformation
+coordinates before exact-rank selection and final molecular-symmetry
+orientation.  Its measured coupling is low while its rows retain chemical
+assignments.  The 72 primitive rows span a rank-30 space.}
+
+\subsection{Norbornane stationary-Hessian comparison}
+
+{The norbornane geometry was optimized at the
+Hartree--Fock/STO-3G level with PySCF~2.14.0, starting from the geometry in
+Listing~S1.  The final energy is \(-268.8938238457\) hartree; the largest
+Cartesian gradient component is \(6.2\times10^{-6}\) hartree/bohr.  The
+lowest eigenvalue of the Cartesian Hessian projected onto the 51-dimensional
+vibrational space is positive (0.00238 hartree/bohr\(^2\)).  One analytic
+Cartesian Hessian is used for every panel of main-text Fig.~10.}
+
+{The redundant primitive pool contains 20 distances, 42
+angles, and 72 dihedrals.  Its Wilson B matrix has rank 51.  Delocalized
+directions are the eigenvectors of \(\Bmat\Bmat^{\mathsf T}\) with eigenvalues
+above \(10^{-10}\) of the largest, as in the cyclobutane control.  The local
+and symmetry-adapted ESALC-I sets each contain 51 independent coordinates.
+The delocalized eigenvectors are symmetry-pure under the recovered
+\(C_{2v}\) operations to numerical precision (minimum irrep-projector
+fraction greater than 0.999999).
+The Cartesian, delocalized, and ESALC-I force matrices use the same
+transformation defined above.  The optimized geometry has \(C_{2v}\)
+symmetry; the final ESALC-I set contains 15 \(A_1\), 11 \(A_2\), 12 \(B_1\), and
+13 \(B_2\) directions.  Table~\ref{tab:norbornane-hessian} gives the coupling
+statistics.  The largest inter-irrep coupling in the final set is
+\(3.4\times10^{-8}\).}
+
+\begin{table}[htbp]
+\centering
+\caption{Norbornane normalized off-diagonal Hessian coupling.  All
+non-redundant representations have rank 51.}
+\label{tab:norbornane-hessian}
+\begin{tabular}{lccc}
+\toprule
+Representation & Mean & 95th percentile & Maximum \\
+\midrule
+Cartesian vibrational & 0.10733 & 0.33673 & 0.55853 \\
+Delocalized internals & 0.04042 & 0.25869 & 0.82044 \\
+Local ESALC-I & 0.02424 & 0.09951 & 0.71758 \\
+Symmetry-adapted ESALC-I & 0.03456 & 0.25471 & 0.74491 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Local-Pseudosymmetry Extended Validation}
+
+The accepted template score is denoted \(s\), its separation from the
+second-best template by \(\Delta s\), the acceptance ceiling by
+\(s_{\max}=0.12\), and the minimum separation by
+\(\Delta s_{\min}=0.02\).  {The point group (PG) and template
+scores} for all 20 ideal/distorted models appear in Table~\ref{tab:si-local-full}.
+{Coordination-number (CN) 5--9 models} were tested.  Python and the separate Fortran implementation agree on every local
+group, place the local totally symmetric row first, and close the target rank.
+
+The shared domain matcher covers all coordination numbers above three.  The
+CN~4 entries are tetrahedral ($T_d$) and square-planar ($D_{4h}$); the
+CN~5--9 entries are the trigonal-bipyramidal/square-pyramidal, octahedral/
+trigonal-prismatic, pentagonal-bipyramidal/capped-octahedral,
+square-antiprismatic/dodecahedral, and tricapped-prismatic/capped-square-
+antiprismatic alternatives listed in Table~\ref{tab:si-local-full}.  CN~10 is covered by bicapped
+square-antiprismatic and bicapped-dodecahedral templates, CN~11 by capped-
+icosahedral and octadecahedral templates, and CN~12 by icosahedral,
+cuboctahedral, and hexagonal-bipyramidal templates.  CN~13 and CN~14 are
+covered by capped-cuboctahedral and bicapped-hexagonal-antiprismatic templates,
+respectively.  Unmatched environments
+use the available generic rank-closing construction.  These assignments are
+made before coordinate export and do not depend on Gaussian.
+
+{For the capped-octahedral coordination-7 model, the cap lies on a local
+threefold axis. The three vertices of the capped face and the three opposite
+vertices are separate ligand orbits. Applying the triplet SALCs shown in the
+main text to each orbit gives
+\(3A_1+2E\) stretching directions; the complete eight-atom model has rank
+18, as reported in Table~\ref{tab:si-local-full}. The seven stretches leave
+11 independent angular directions, selected from the valence-angle orbits
+by the same rank test. The explicit angular SALCs in the main text have
+local symmetry \(2A_1+A_2+4E\). At the ideal geometry the three
+opposite-ligand angles are linear, so their ordinary angle derivatives are
+singular; the remaining 18 angle sources span all 11 angular directions.
+No dihedral is intrinsic to this bare coordination sphere; a bonded
+substituent or accepted collective rotor supplies a distinct torsional
+family when present.}
+
+\begin{landscape}
+\scriptsize
+\begin{longtable}{@{}ccp{0.27\linewidth}ccrrrr@{}}
+\caption{Complete high-coordination local-template validation.}\label{tab:si-local-full}\\
+\toprule
+CN & Local group & Template & Geometry & \(s\) & \(\Delta s\) & \(s_{\max}\) & \(\Delta s_{\min}\) & Rank \\
+\midrule
+\endfirsthead
+\toprule
+CN & Local group & Template & Geometry & \(s\) & \(\Delta s\) & \(s_{\max}\) & \(\Delta s_{\min}\) & Rank \\
+\midrule
+\endhead
+5 & \(D_{3h}\) & trigonal bipyramidal & ideal & \(2.48\times10^{-17}\) & 0.217962 & 0.12 & 0.02 & 12 \\
+5 & \(D_{3h}\) & trigonal bipyramidal & distorted & 0.007152 & 0.206418 & 0.12 & 0.02 & 12 \\
+5 & \(C_{4v}\) & square pyramidal & ideal & \(5.30\times10^{-17}\) & 0.217962 & 0.12 & 0.02 & 12 \\
+5 & \(C_{4v}\) & square pyramidal & distorted & 0.012670 & 0.202571 & 0.12 & 0.02 & 12 \\
+6 & \(O_h\) & octahedral & ideal & 0 & 0.375781 & 0.12 & 0.02 & 15 \\
+6 & \(O_h\) & octahedral & distorted & 0.006421 & 0.364851 & 0.12 & 0.02 & 15 \\
+6 & \(D_{3h}\) & trigonal prismatic & ideal & \(9.72\times10^{-17}\) & 0.375781 & 0.12 & 0.02 & 15 \\
+6 & \(D_{3h}\) & trigonal prismatic & distorted & 0.005769 & 0.368504 & 0.12 & 0.02 & 15 \\
+7 & \(D_{5h}\) & pentagonal bipyramidal & ideal & 0 & 0.174704 & 0.12 & 0.02 & 18 \\
+7 & \(D_{5h}\) & pentagonal bipyramidal & distorted & 0.005878 & 0.165714 & 0.12 & 0.02 & 18 \\
+7 & \(C_{3v}\) & capped octahedral & ideal & \(5.93\times10^{-17}\) & 0.174704 & 0.12 & 0.02 & 18 \\
+7 & \(C_{3v}\) & capped octahedral & distorted & 0.005464 & 0.167037 & 0.12 & 0.02 & 18 \\
+8 & \(D_{4d}\) & square antiprismatic & ideal & \(3.85\times10^{-17}\) & 0.296745 & 0.12 & 0.02 & 21 \\
+8 & \(D_{4d}\) & square antiprismatic & distorted & 0.004965 & 0.290042 & 0.12 & 0.02 & 21 \\
+8 & \(D_{2d}\) & dodecahedral-like & ideal & \(1.33\times10^{-16}\) & 0.296745 & 0.12 & 0.02 & 21 \\
+8 & \(D_{2d}\) & dodecahedral-like & distorted & 0.008716 & 0.284759 & 0.12 & 0.02 & 21 \\
+9 & \(D_{3h}\) & tricapped trigonal prismatic & ideal & \(2.62\times10^{-17}\) & 0.112154 & 0.12 & 0.02 & 24 \\
+9 & \(D_{3h}\) & tricapped trigonal prismatic & distorted & 0.004833 & 0.105571 & 0.12 & 0.02 & 24 \\
+9 & \(C_{4v}\) & capped square antiprismatic & ideal & 0 & 0.112154 & 0.12 & 0.02 & 24 \\
+9 & \(C_{4v}\) & capped square antiprismatic & distorted & 0.004434 & 0.106386 & 0.12 & 0.02 & 24 \\
+\bottomrule
+\end{longtable}
+\end{landscape}
+\normalsize
+
+{Table~\ref{tab:si-named-coordination-controls} gives the two
+named high-coordination controls and their thresholds.}  Distorted
+\(\mathrm{SF_6}\) requires deliberately relaxed effective-atomic-number and
+distance thresholds, demonstrating that pseudosymmetry is an explicit user
+choice rather than an implicit relabelling.
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\caption{Named high-coordination controls and their declared thresholds.}
+\label{tab:si-named-coordination-controls}
+\begin{tabular}{@{}lccrrrrr@{}}
+\toprule
+System & Template & Group & \(s\) & \(\Delta s\) & \(\tau_Z\) & \(\tau_r\)/\textup{\AA} & Rank \\
+\midrule
+Distorted \(\mathrm{SF_6}\) & octahedral & \(O_h\) & 0.006472 & 0.364380 & 0.1 & 0.05 & 15/15 \\
+\([\mathrm{ZrF_8}]^{4-}\) & square antiprismatic & \(D_{4d}\) & 0.000017 & 0.296729 & 0.0005 & 0.001 & 21/21 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The tests also include CN 10--14 generic alternatives and an ambiguous near-tie control.
+
+\subsection{GOPPEG all-ESALC-C optimization}
+
+{GOPPEG is the Cambridge Structural Database (CSD) identifier for an 81-atom zirconium organometallic complex in the transition metal quantum mechanics (tmQM) dataset.\cite{BalcellsSkjelstad2020tmQM} Its distorted starting geometry uses a complete
+\(C_1\) ESALC-C basis of rank \(237/237\) after removal of overall
+translation and rotation. The LINK
+optimizer uses second-generation geometry, frequency, and noncovalent
+extended tight binding (GFN2-xTB) energies and analytic
+gradients.\cite{BannwarthEhlertGrimme2019GFN2xTB} Table~\ref{tab:goppeg-sycart}
+reports the converged result. Mixed ESALC-I/ESALC-C handling is implemented
+but is not used in this work.}
+
+\begin{table}[htbp]
+\centering
+\caption{GOPPEG optimization with a complete ESALC-C basis.}
+\label{tab:goppeg-sycart}
+\begin{tabular}{lr}
+\toprule
+Quantity & Result \\
+\midrule
+Optimization steps & 32 \\
+Energy--gradient evaluations & 47 \\
+Maximum Cartesian gradient / \(E_h/a_0\) & \(1.8498\times10^{-4}\) \\
+Root-mean-square Cartesian gradient / \(E_h/a_0\) & \(4.1180\times10^{-5}\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Coordinate Motifs}
+
+{Table~\ref{tab:si-motif-tests} collects the coordinate-motif
+checks; FD denotes finite-difference derivatives of the Wilson B matrix.}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\caption{Numerical checks for representative coordinate families.}
+\label{tab:si-motif-tests}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.20\linewidth}>{\raggedright\arraybackslash}p{0.30\linewidth}>{\raggedright\arraybackslash}X@{}}
+\toprule
+Molecular motif & ESALC-I coordinates & Numerical result \\
+\midrule
+Formamide transfer & \(R_{\rm NH}\), \(R_{\rm OH}\), \(\Sigma r\), \(\Delta r\) & For \(R_{\rm NH}=1.02\) and \(R_{\rm OH}=1.21\)~\AA, \(\Sigma r=2.23\) and \(\Delta r=-0.19\)~\AA; sparse rows equal the exact sum/difference. \\
+Li\(_2\)--Ar scan & Two protected translation axes, polar radius and elliptic quadratic & At \((x,y)=(3,4)\), \(R=5.000000\), \((x/7.084)^2+(y/4.718)^2=0.898137\), and the elliptic row has six nonzero Cartesian entries. \\
+\(XY_3\) local block & Projected homogeneous \(C_{3v}\) bend block & Rank 3/3; ordered rows are \(A_1\), \(E\), \(E\), with exactly one totally symmetric row. \\
+\(XY_2\) local block & Complete acyclic \((2+1)\) branch domain & Methylamine retains two in-plane rows, one oriented out-of-plane row, and one six-term normalized collective rotor with exclusive family ownership. \\
+Weak-complex rotor & Protected fragment translations and orientations & Water-dimer coordinate set rank 12/12; {Wilson B matrix} shape \(12\times18\); finite rigid-step residual below 0.02 in the six protected variables. \\
+Ferrocene cyclopentadienyl torsion & Ring-center/Fe coordinates over \(0,9,18,27,36^\circ\) & Rank and analytic-\(\Bmat\) rank are 57 at all five points; two ring centers persist; sparse density is 0.095--0.101 and the smallest singular value remains above \(10^{-8}\). \\
+Cyclohexane ring flip & Three symmetry-adapted ring-puckering directions & Rank 48/48; three puckering rows and three frozen Gaussian expressions. \\
+Reduced path subgroup & Same cyclohexane source rebuilt with retained group \(C_1\) & Rank remains 48/48; global high-symmetry labels are not imposed along the path and scan torsions remain uncombined. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+These checks establish the automatic construction and analytic rows that feed
+the subsequent optimizer tests.
+
+\section{Optimization Results}
+
+\subsection{Common tight-binding starting geometries for noncovalent systems}
+
+The noncovalent comparisons start from complexes optimized with the {second-generation geometries,
+frequencies, and noncovalent extended tight-binding method (GFN2-xTB)}
+(\href{https://github.com/grimme-lab/xtb}{xTB} 6.7.1), using the standard
+geometry-optimization driver and tight optimization thresholds.  The method is
+described in Ref.~\cite{BannwarthEhlertGrimme2019GFN2xTB}.  {Table~\ref{tab:gfn2xtb-starting-geometries}
+records the resulting iteration counts and energies.}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\caption{GFN2-xTB preprocessing of the noncovalent starting geometries.}
+\label{tab:gfn2xtb-starting-geometries}
+\begin{tabular}{lrr}
+\toprule
+System & GFN2-xTB iterations & Final energy / $E_h$ \\
+\midrule
+Water dimer & 39 & $-10.148095861237$ \\
+Ammonia--water & 43 & $-9.505231322616$ \\
+Ammonia dimer & 9 & $-8.855304465487$ \\
+Formamide--water & 8 & $-15.729368709572$ \\
+Formic acid--water & 11 & $-16.369999724051$ \\
+Imidazole--water, acceptor & 35 & $-19.376267789565$ \\
+Imidazole--water, donor & 34 & $-19.377553067244$ \\
+Uracil--water, NH donor & 57 & $-29.701535010796$ \\
+Uracil--water, carbonyl acceptor & 77 & $-29.696547792107$ \\
+Benzene--water & 17 & $-20.950381937980$ \\
+Benzene dimer & 36 & $-31.765815629075$ \\
+Formamide cyclic dimer & 14 & $-21.313639924814$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+{Table~\ref{tab:noncovalent-sonic-summary} records the ESALC-I
+optimization outcomes and observed basin behavior for the same systems.}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\caption{Final ESALC-I noncovalent runs.  The basin column records the observed
+topological behavior during optimization.}
+\label{tab:noncovalent-sonic-summary}
+\begin{tabularx}{\linewidth}{@{}l l r l X@{}}
+\toprule
+System & {Coordinate family} & Steps & Outcome & Basin behavior \\
+\midrule
+Water dimer & Pseudobond & 8 & Converged & H-bond 2--4 retained \\
+Ammonia--water & Pseudobond & 9 & Converged & H-bond 3--4 retained (1.877\(\rightarrow\)1.911~\AA) \\
+Ammonia dimer & Quaternion & 7 & Converged & Equivalent-H exchange only \\
+Formic acid--water & Pseudobond & 11 & Converged & H-bond 5--6 retained (1.737\(\rightarrow\)1.663~\AA) \\
+Formamide--water & Pseudobond & 16 & Converged & Contact 6--9 retained \\
+Benzene--water & Quaternion & 8 & Converged & OH--\(\pi\) basin retained \\
+Benzene dimer & Quaternion & 12 & Converged & Equivalent ring-atom exchange only \\
+Formamide cyclic dimer & Quaternion & 7 & Converged & Cyclic motif retained \\
+Imidazole--water, acceptor & Pseudobond & 17 & Converged & H-bond 5--10 retained (1.968\(\rightarrow\)1.845~\AA) \\
+Imidazole--water, donor & Pseudobond & 20 & Converged & H-bond 9--11 retained (1.880\(\rightarrow\)1.930~\AA) \\
+Uracil--water, NH donor & Pseudobond & 12 & Converged & Contact 9--13 retained \\
+Uracil--water, carbonyl acceptor & Pseudobond & 19 & Converged & H-bond 12--15 retained (1.886\(\rightarrow\)1.896~\AA) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The benzene dimer supplies a dispersion-bound test case.  The
+cyclic formamide dimer was initialized from the literature \(C_{2h}\) double
+hydrogen-bonded motif and then optimized independently with GFN2-xTB; its
+optimized geometry is used in the comparison.
+For benzene--water, the optimized GFN2-xTB structure was rigidly rotated so
+that the water hydrogens face the ring before the three optimizer calculations;
+{this geometry is the common starting structure.}
+The optimized Cartesian geometries are
+the starting structures for the subsequent ESALC-I, Gaussian redundant, and
+PySCF/geomeTRIC comparisons.\cite{WangSong2016GeomeTRIC}
+
+The construction tests above establish rank and symmetry.  The external tests
+then test direct use of the complete ESALC-I set in Gaussian 16 Rev. C.02
+and compare optimization routes on a common potential-energy surface.  The
+paired Gaussian diagnostic in
+Table~\ref{tab:gaussian-matched-coordinate-paths} compares automatic ESALC-I
+generation with Gaussian's built-in redundant-coordinate generation inside
+the Gaussian optimization framework.  The controlled PySCF comparison below
+instead holds the
+potential and starting structures fixed across PySCF/geomeTRIC,
+Gaussian/ESALC-I, and Gaussian/native routes.  These tests define
+their stated finite protocols and span both the covalent and noncovalent
+optimization methods used in this work.
+
+\subsection{Gaussian 16 Rev. C.02 \texttt{ReadAllGIC} interface}
+
+ESALC-I generates the complete \texttt{ReadAllGIC} block for
+Gaussian 16 Rev. C.02. The \texttt{External} keyword connects this
+optimization machinery to arbitrary energy and gradient sources.
+The coordinate-consumption probes in
+Table~\ref{tab:readallgic-opt}: curvilinear ring rows without a corresponding
+commercial GIC name are written through algebraically equivalent ordered
+four-point kernels, and unsupported long multi-dihedral expressions are
+expanded into the accepted syntax.  The final geometry is re-evaluated against
+the generated coordinate definitions (Sec.~S3).  Every ESALC-I row remains
+explicit, with non-totally symmetric rows marked \texttt{Frozen} whenever
+symmetry is imposed.  At the {Hartree--Fock (HF)} level with the
+Slater-type-orbital three-Gaussian (STO-3G) minimal basis, the three compatibility probes reach
+stationary points in three to nine steps.  {The Gaussian
+\(NTRed/NRank\) fields report the redundant-coordinate count and rank when
+available.}
+
+\begin{table}[htbp]
+\centering
+\caption{{Gaussian 16 Rev. C.02 ESALC-I optimizations at
+HF/STO-3G.}}
+\label{tab:readallgic-opt}
+\begin{tabular}{lccccc}
+\toprule
+System & PG & \ESALCI\ rank & Gaussian \(NTRed/NRank\) & Steps & \(E_\mathrm{final}\) / \(E_h\) \\
+\midrule
+Cyclohexane & \(D_{3d}\) & 48/48 & -- & 5 & \(-231.482671171\) \\
+Norbornane & \(C_{2v}\) & 51/51 & -- & 9 & \(-268.893823819\) \\
+Cubane & \(O_h\) & 42/42 & -- & 3 & \(-303.781399977\) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A symmetry-enabled norbornane variant retains the full rank-closing block but
+activates only its 15 \(A_1\) rows.  It reaches a \(C_{2v}\)-preserving stationary
+point in eight steps (Secs.~S1 and S3).
+
+Additional small and medium-size checks used the same starting geometries for
+the native and ESALC-I paths.  The settings were MP2/6-31G(d), \texttt{Tight}
+for malonaldehyde and diborane, and HF/STO-3G without \texttt{Tight} for the
+two ferrocene structures; all four calculations used standard guess Hessians.
+All eight jobs terminated normally; the malonaldehyde geometry relaxed from
+the declared \(C_{2v}\) structure to \(C_s\) in both paths.
+{Table~\ref{tab:additional-gaussian-checks} gives the paired
+step counts and endpoint energy differences.}
+
+\begin{table}[htbp]
+\centering
+\caption{Supplementary paired Gaussian checks beyond the main comparison.}
+\label{tab:additional-gaussian-checks}
+\begin{tabular}{lccccl}
+\toprule
+System & Method & ESALC-I steps & Native steps & Final PG & $|\Delta E|/E_h$ \\
+\midrule
+Malonaldehyde ($C_{2v}$) & MP2/6-31G(d), Tight & 10 & 10 & $C_s$ & $2.2\times10^{-7}$ \\
+Diborane ($D_{2h}$) & MP2/6-31G(d), Tight & 5 & 5 & $D_{2h}$ & $7.0\times10^{-8}$ \\
+Ferrocene ($D_{5h}$) & HF/STO-3G & 6 & 6 & $D_{5h}$ & $2.6\times10^{-7}$ \\
+Ferrocene ($D_{5d}$) & HF/STO-3G & 6 & 6 & $D_{5d}$ & $2.8\times10^{-7}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Optimization comparison on a common potential-energy surface}
+
+{Five systems use the Perdew--Burke--Ernzerhof hybrid (PBE0)
+functional\cite{AdamoBarone1999PBE0} with the def2-SVP basis\cite{WeigendAhlrichs2005Def2} and third-generation dispersion
+(D3) with Becke--Johnson damping\cite{GrimmeEhrlichGoerigk2011D3BJ} and the
+Axilrod--Teller--Muto three-body term [D3(BJ)-ATM]:}
+glycine, the \(C_s\) malonaldehyde minimum, the \(C_{2v}\) malonaldehyde
+{transition state (TS)}, the water dimer, and formamide--water.  Every route starts from
+the same symmetrized GFN2-xTB geometry.  PySCF~2.14.0 supplies {restricted
+Kohn--Sham (RKS)} energies and
+analytic gradients, including the D3(BJ)-ATM term, either directly to
+geomeTRIC~1.1.1 or through Gaussian's \texttt{External} interface.
+
+The PySCF/geomeTRIC calculation uses its default TRIC path and standard initial
+Hessian.  The Gaussian 16 Rev. C.02 ESALC-I route uses the generated
+\texttt{ReadAllGIC} coordinates; the native route uses built-in redundant internals.  Neither Gaussian route uses
+\texttt{CalcFC}.  All three routes use root-mean-square (RMS) and maximum gradient thresholds of
+\(3.0\times10^{-4}\) and \(4.5\times10^{-4}\,E_h a_0^{-1}\), and RMS and
+maximum displacement thresholds of \(1.2\times10^{-3}\) and
+\(1.8\times10^{-3}\,a_0\).  The displacement thresholds are converted to
+\(6.3501\times10^{-4}\) and \(9.5252\times10^{-4}\)~\AA{} for geomeTRIC,
+which also applies its \(10^{-6}\,E_h\) energy-change criterion.  Gaussian
+applies its corresponding force/displacement termination test.  The use of
+each optimizer's standard Hessian model makes this an end-to-end route
+comparison.
+
+The coordinate protocol is fixed before optimization.  Covalent systems use
+the automatic natural-internal {coordinate set}; the open water-dimer contact graph uses
+pseudobonds; and the closed formamide--water graph uses the exponential-map
+relative-pose block.  Every ESALC-I row is rescaled according to
+Eq.~\ref{eq:gaussian-optimizer-scaling}.  Non-totally symmetric rows are retained
+as \texttt{Frozen}, while the native Gaussian calculations use Gaussian's
+molecular-symmetry machinery.
+{Table~\ref{tab:pyscf-cross-optimizer} compares the resulting
+optimization paths from the common starting geometries.}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\caption{Energy--gradient evaluations for five common-potential optimizations.}
+\label{tab:pyscf-cross-optimizer}
+\begin{tabularx}{\linewidth}{@{}lXrrrr@{}}
+\toprule
+System & Contact type & ESALC-I & Gaussian native & Established optimizer & Rank/point group \\
+\midrule
+Glycine & covalent & 4 & 4 & 6 & 24/24, \(C_s\) \\
+Malonaldehyde minimum & covalent & 7 & 7 & 10 & 21/21, \(C_s\) \\
+Malonaldehyde TS & covalent & 5 & 6 & 9 & 21/21, \(C_{2v}\) \\
+Water dimer & open/pseudobond & 10 & 10 & 12 & 12/12, \(C_s\) \\
+Formamide--water & closed/exponential map & 11 & 16 & 15 & 21/21, \(C_1\) \\
+\midrule
+Total evaluations & & 37 & 43 & 52 & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+All calculations terminate normally in the intended basin.  The minimum
+ESALC-I metric eigenvalues remain positive throughout; the smallest over the
+five paths is 0.0162.  The largest aligned ESALC-I--native endpoint
+{root-mean-square deviation (RMSD)} is
+0.0018~\AA{}, and the largest energy difference among any two route endpoints
+is \(11.1\,\mu E_h\).  The three covalent ESALC-I paths use 16 energy--gradient evaluations,
+and the two weak-complex paths use 21. Table~\ref{tab:pyscf-cross-optimizer}
+gives the counts for the established optimization routes. All five systems
+start from common geometries and use the same potential-energy surface.
+
+\subsection{Native outcomes for the boundary tests}
+
+The native-redundant Al$_{13}$ and Al$_{13}^{+}$ jobs both reach normal
+termination and satisfy the stationary-point criteria after 45 and 53 steps,
+respectively.  In both cases the optimization leaves the initial \(O_h\)
+subspace and terminates in \(C_1\), at
+\(-3106.67435751\,E_h\) and \(-3106.75576280\,E_h\).  The corresponding
+symmetry-oriented inverse-distance calculations terminate after six and five
+steps while retaining \(O_h\).  The paths end in different symmetry subspaces, illustrating the role of
+explicit symmetry orientation.
+
+A native-redundant pyrene--NH$_3$ optimization from an
+unrelaxed assembly likewise reaches normal termination after 34 steps, using
+Gaussian's negligible-force criterion.  At that point the nitrogen atom lies
+approximately 25.7~\AA{} from the pyrene plane and the final energy is
+\(-659.780742043\,E_h\): the calculation has reached the dissociated
+\(C_s\) limit.  The fragment-pose calculation below starts from separately relaxed fragments.
+
+\subsubsection{\texorpdfstring{Preoptimized-fragment adsorption protocol: pyrene--NH$_3$}{Preoptimized-fragment adsorption protocol: pyrene--NH3}}
+
+To distinguish relaxation within each fragment from relaxation of the
+interfragment pose, pyrene and NH$_3$ were optimized separately at the cheaper HF/STO-3G
+with their automatically generated ESALC-I coordinates.  The isolated jobs
+required four and five Gaussian geometry steps, respectively.  Gaussian can
+place independently optimized fragments in different standard Cartesian
+frames; therefore each final fragment geometry was rigidly aligned to its own
+starting frame before the complex was assembled.  The assembled 84-coordinate
+coordinate set was re-evaluated at the combined geometry and supplied unchanged to a
+full ESALC-I optimization.  The latter reached normal termination in 13 steps,
+with \(NTRed/NRank=84/84\), final point group \(C_s\), and
+\(E=-659.781527448\,E_h\).  Rigid alignment preserves each optimized fragment geometry.
+
+\subsection{Paired native-redundant and ESALC-I coordinate paths}
+
+Gaussian 16 Rev. C.02 reads the generated ESALC-I set through
+\texttt{ReadAllGIC} and builds redundant coordinates for the native path.  For each
+system, the native-redundant and ESALC-I jobs use the same
+starting Cartesian geometry, MP2/\allowbreak6-31G(d),
+\texttt{CalcHFFC},\texttt{Tight}, Gaussian
+symmetry, and geometry-optimization protocol.  In the ESALC-I path Gaussian receives the complete \(3N-6\) generated block: all totally symmetric
+rows are active and every non-totally symmetric row is also supplied,
+explicitly marked \texttt{Frozen}.  All eighteen jobs reached normal termination.
+
+The eight systems that remain in the same symmetry require 49 aggregate steps
+with native redundant internals and 46 with ESALC-I.
+Final energies for those eight pairs differ by at most
+\(2.1\times10^{-7}\,E_h\).  Four cases tie; ferrocene requires one fewer ESALC-I
+step, the sumanene minimum one more, alanine one fewer, and 2-deoxyribose two fewer.
+The paired paths have similar endpoint energies and convergence counts.
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3.0pt}
+\caption{{Paired Gaussian MP2/6-31G(d) coordinate paths with
+\texttt{CalcHFFC,Tight} and molecular symmetry.}}
+\label{tab:gaussian-matched-coordinate-paths}
+\begin{tabularx}{\linewidth}{@{}lccccXX@{}}
+\toprule
+System & ESALC-I rank & Active/Frozen & ESALC-I steps & Native steps &
+ESALC-I PG path & Native PG path \\
+\midrule
+Cubane & 42/42 & 2/40 & 3 & 3 & \(O_h\) & \(O_h\) \\
+Saccharin & 45/45 & 30/15 & 6 & 6 & \(C_s\) & \(C_s\) \\
+Ferrocene & 57/57 & 4/53 & 6 & 7 & \(D_{5h}\) & \(D_{5h}\) \\
+Pagodane & 114/114 & 18/96 & 7 & 7 & \(D_{2h}\) & \(D_{2h}\) \\
+Sumanene minimum & 93/93 & 31/62 & 7 & 6 & \(C_3\) & \(C_3\) \\
+Sumanene planar & 93/93 & 11/82 & 7 & 14 &
+\(D_{3h}\) & \(D_{3h}\!\rightarrow C_1\!\rightarrow C_{3v}\) \\
+C$_{60}$ & 174/174 & 2/172 & 5 & 5 & \(I_h\) & \(I_h\) \\
+Alanine I & 33/33 & 33/0 & 7 & 8 & \(C_1\) & \(C_1\) \\
+2-Deoxyribose & 51/51 & 51/0 & 5 & 7 & \(C_1\) & \(C_1\) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+{The planar-sumanene paths reach different stationary subspaces
+and are reported individually.}  The native-redundant job
+starts at \(D_{3h}\), is recognized as \(C_1\) from steps 2--7, and reaches
+the \(C_{3v}\) bowl after 14 steps.  ESALC-I remains in \(D_{3h}\) through
+normal termination at step~7.  The row demonstrates explicit symmetry control
+in addition to the iteration comparison.  The native final energy is, as
+expected, essentially that of the independently started bowl minimum.
+
+In exact arithmetic, a gradient evaluated at a symmetric geometry is totally
+symmetric.  {Gaussian's built-in redundant GICs are not explicitly}
+organized into irreducible-representation blocks.  Finite-precision coordinate
+evaluation, linear solves, Hessian updates, and back-transformation can
+therefore introduce small non-totally symmetric components, and active
+nonsymmetric directions allow them to accumulate.  ESALC-I assigns every row to
+an irreducible representation, activates only the totally symmetric block, and
+retains every other rank-closing row as \texttt{Frozen}; numerical components
+outside the declared symmetry subspace are consequently projected out at every
+step.  ESALC-I preserves the requested point group in all nine cases.
+
+Cubane and pagodane test
+high-symmetry cage and many-cycle construction, saccharin tests a fused
+heterocycle, and ferrocene tests automatically perceived ring-center/haptic and
+fragment-frame families.  Sumanene adds a seven-ring fused polycycle in its
+\(C_3\) bowl and planar \(D_{3h}\) forms.  In both forms, 93 automatically
+generated rows are reduced to exact rank and symmetry oriented before
+writing.  The planar structure is a \(D_{3h}\) stationary-point
+reference with one imaginary mode; the present calculation tests preservation
+of that symmetry subspace.
+
+The C$_{60}$ case starts from an ideal \(I_h\) truncated icosahedron.  Its
+31-cycle basis generates 74 stretches, 46 cyclic bends, and 54 butterfly rows.
+The resulting 174 coordinates retain \(NTRed/NRank=174/174\) and the full
+120-operation \(I_h\) group through normal termination at step~5, with only
+two \(A_g\) rows active and all other rows \texttt{Frozen}.  Pagodane likewise
+retains rank 114/114 and \(D_{2h}\) through all seven steps.
+
+The frozen ferrocene fragment translation and orientation rows are written
+by their exact analytic reference {rows of the Wilson B matrix}.  This is locally exact for a
+frozen coordinate and avoids a singular angle--axis helper at coincident
+reference frames.  All 57 ESALC-I rows remain present, of which 53 are frozen.
+
+The additional covalent comparison uses PBE0/def2-SVP with identical Cartesian
+starting geometries.  Gaussian 16 Rev. C.02 native and ESALC-I/\texttt{ReadAllGIC} routes
+complete dioxane (4/4), morpholine (6/5), piperazine (6/5), proline (18/16),
+ibuprofen (9/9), regenerated uridine (15/15), regenerated tryptophan (9/10),
+and artemisinin (10/11) steps, where each pair is listed as native/ESALC-I.
+The tryptophan and artemisinin pairs complete the reported
+{validation set}.
+
+
+The same export was compared with Gaussian redundant internals, Cartesians, and
+a sequential Z matrix, using \texttt{CalcFC} for ESALC-I.  Water and hydrogen
+peroxide are simple controls; norbornane and 75-dimensional camphor test bridged
+rings.  The results appear in
+Table~\ref{tab:gaussian-coordinate-comparison}. The generated ESALC-I coordinates
+reach normal termination in the ordinary and bridged-ring systems.
+
+\begin{table}[htbp]
+\centering
+\caption{{Gaussian 16 Rev. C.02 HF/STO-3G steps for native redundant,
+ESALC-I, Cartesian, and Z-matrix coordinate paths.}}
+\label{tab:gaussian-coordinate-comparison}
+\begin{tabular}{lccrrrr}
+\toprule
+System & PG & \ESALCI\ rank & \ESALCI & Default & Cartesian & Z matrix \\
+\midrule
+Water & \(C_{2v}\) & 3/3 & 5 & 4 & 4 & 4 \\
+Hydrogen peroxide & \(D_{2h}\) & 6/6 & 6 & 6 & 6 & 5 \\
+Norbornane & \(C_{2v}\) & 51/51 & 2 & 4 & 4 & 6 \\
+Camphor & \(C_1\) & 75/75 & 4 & 8 & 14 & 33 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A separate compatibility check retains the curvilinear \(U\) representation
+throughout.  Camphor contains one \(U(6,4,7,8)\) row and converges in eight
+HF/STO-3G steps with the internal evaluator.  Its Gaussian 16 Rev. C.02 input translates
+that local source into the supported ordered four-point syntax, while retaining
+the original coordinate value, derivative, and family assignment.  SI
+Sec.~S3 gives the exact atom-order convention and the frozen rows of the
+51-coordinate norbornane example.
+
+
+\section{Baker transition-state geometries}
+\label{sec:baker-geometries}
+The following Cartesian starting geometries were used for both the ESALC-I and native Gaussian paths in the 25-case Baker comparison.\cite{BakerChan1996TS} Coordinates are in angstrom; charge and spin multiplicity are given for each case.
+\subsection*{Baker TS 01: \texttt{hcn}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+N 0.000000 0.000000 1.148380
+H 1.585360 0.000000 1.148380
+\end{verbatim}
+\subsection*{Baker TS 02: \texttt{hcch}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.240540
+H -1.440083 0.000000 0.819518
+H 0.525846 0.000000 -0.924033
+\end{verbatim}
+\subsection*{Baker TS 03: \texttt{h2co}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+O 0.000000 0.000000 1.250000
+H 1.280250 0.000000 -0.225743
+H 0.750000 0.000000 -1.299038
+\end{verbatim}
+\subsection*{Baker TS 04: \texttt{ch3o}}
+Charge/multiplicity: \texttt{0 2}.
+\begin{verbatim}
+O 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.423000
+H 1.006389 0.000000 0.332387
+H -0.272228 0.924952 1.924921
+H -0.272228 -0.924952 1.924921
+\end{verbatim}
+\subsection*{Baker TS 05: \texttt{cyclopropyl}}
+Charge/multiplicity: \texttt{0 2}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.454000
+C 1.431910 0.000000 1.201516
+H 0.736675 -0.618144 -0.546300
+H -0.903666 0.328908 -0.546300
+H 2.021514 0.914594 1.399307
+H 2.021514 -0.914594 1.399307
+H -0.798356 0.096538 2.150710
+\end{verbatim}
+\subsection*{Baker TS 06: \texttt{bicyclobutane}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.495000
+C 1.417048 0.000000 1.546961
+C -0.654276 1.115186 0.684581
+H 0.757024 -0.058250 -0.786238
+H -0.605360 -0.701316 2.108202
+H 1.994775 -0.884164 1.847108
+H 2.044468 0.897275 1.478764
+H -0.296120 2.164605 0.735031
+H -1.759901 1.143857 0.687196
+\end{verbatim}
+\subsection*{Baker TS 07: \texttt{bicyclobutane}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.489000
+C 0.949272 0.000000 2.482357
+C -0.106958 1.329369 0.369858
+H -0.845880 -0.478576 -0.532088
+H -0.981949 -0.388781 1.858846
+H 1.963902 0.407430 2.381697
+H 0.705633 -0.224075 3.528225
+H 0.736421 1.988287 0.648738
+H -0.968647 2.008493 0.176780
+\end{verbatim}
+\subsection*{Baker TS 08: \texttt{formyloxyethyl}}
+Charge/multiplicity: \texttt{0 2}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.487000
+O 1.385059 0.000000 1.942384
+C 2.250680 0.190043 0.904208
+O 1.694585 0.623486 -0.151624
+H -0.523112 0.805522 -0.525845
+H 0.067441 -0.964456 -0.516229
+H -0.471937 0.916220 1.922864
+H -0.439409 -0.926357 1.937758
+H 3.266797 -0.190300 1.044500
+\end{verbatim}
+\subsection*{Baker TS 09: \texttt{parentdieslalder}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.0000000000 1.4000000000 0.0000000000
+C 0.0000000000 -1.4000000000 0.0000000000
+C 1.2000000000 -0.7700000000 0.0000000000
+C 1.2000000000 0.7700000000 0.0000000000
+C -1.0000000000 0.7000000000 -1.7320510000
+C -1.0000000000 -0.7000000000 -1.7320510000
+H 2.1112230000 -1.3439580000 0.0815170000
+H 2.1112230000 1.3439580000 0.0815170000
+H -0.0073520000 2.4767720000 0.0831100000
+H -0.0073520000 -2.4767720000 0.0831100000
+H -0.8958700000 0.8032440000 -0.0993020000
+H -0.8958700000 -0.8032440000 -0.0993020000
+H -0.2195930000 1.2065600000 -2.2784970000
+H -0.2195930000 -1.2065600000 -2.2784970000
+H -1.8670670000 1.2153310000 -1.3460080000
+H -1.8670670000 -1.2153310000 -1.3460080000
+\end{verbatim}
+\subsection*{Baker TS 10: \texttt{tetrazine}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+N 1.310851 0.631955 0.161807
+N 0.425507 1.348536 -0.128337
+C 1.194308 -0.762881 0.062226
+C -2.016656 0.303884 0.061906
+N -0.051060 -1.145422 -0.085710
+N -0.912607 -0.213309 -0.200128
+H 2.062050 -1.413074 0.105162
+H -2.536802 -0.185255 0.916616
+\end{verbatim}
+\subsection*{Baker TS 11: \texttt{trans\_butadiene}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000000 0.000000000 0.000000000
+C 0.000000000 0.000000000 1.467000000
+C 1.094330000 0.000000000 -0.738135000
+C -0.703421002 0.838305086 2.205135000
+H -0.925741000 0.000000000 -0.556241000
+H 0.595054891 -0.709158695 2.023241000
+H 1.000114000 0.000000000 -1.815021000
+H 2.074955000 0.000000000 -0.280862000
+H -0.642861174 0.766131784 3.282021000
+H -1.333755653 1.589507444 1.747862000
+\end{verbatim}
+\subsection*{Baker TS 12: \texttt{ethane\_h2\_abstraction}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.430000
+H 1.299038 0.000000 -0.750000
+H 1.299038 0.000000 0.680000
+H -0.238989 -0.958531 -0.460654
+H -0.238989 0.958531 -0.460654
+H -0.238989 0.958531 1.890654
+H -0.238989 -0.958531 1.890654
+\end{verbatim}
+\subsection*{Baker TS 13: \texttt{hf\_abstraction}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.0000000000 0.0000000000 0.0000000000
+C 0.0000000000 0.0000000000 1.4300000000
+H 1.4772120000 0.0000000000 -0.2604720000
+F 1.8711350000 0.0000000000 1.7599320000
+H -0.2533350000 -0.9454600000 -0.4564280000
+H -0.2533350000 0.9454600000 -0.4564280000
+H -0.2533350000 0.9454600000 1.8864280000
+H -0.2533350000 -0.9454600000 1.8864280000
+\end{verbatim}
+\subsection*{Baker TS 14: \texttt{vinyl\_alcohol}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.0000000000 0.0000000000 0.0000000000
+C 0.0000000000 0.0000000000 1.4300000000
+O 1.1258330000 0.0000000000 2.0800000000
+H -0.4328730000 -0.9282990000 -0.3728020000
+H -0.5121320000 0.8870390000 -0.3728020000
+H -0.9403760000 0.0822720000 1.9750000000
+H 1.1236090000 0.1018970000 0.7338530000
+\end{verbatim}
+\subsection*{Baker TS 15: \texttt{hocl}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+O 0.0000000000 0.0000000000 0.0000000000
+C 0.0000000000 0.0000000000 1.1700000000
+Cl 2.3350000000 0.0000000000 1.1700000000
+H 0.0000000000 0.0000000000 2.2970000000
+\end{verbatim}
+\subsection*{Baker TS 16: \texttt{h2po4\_anion}}
+Charge/multiplicity: \texttt{-1 1}.
+\begin{verbatim}
+P 0.0000000 0.0000000 0.0000000
+O 0.0000000 0.0000000 1.4600000
+O 1.3765120 0.0000000 -0.4866370
+O -0.9333880 -1.6166750 -0.6599600
+O -1.2499610 0.1678910 -0.8837480
+H -1.2421250 -2.1282930 0.0785710
+H -1.8181770 -0.9580920 -1.0327190
+\end{verbatim}
+\subsection*{Baker TS 17: \texttt{claisen}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.420000
+C 1.216766 0.000000 2.122500
+O 1.939676 -1.811097 1.643551
+C 1.969182 -1.792073 0.334021
+C 0.764394 -1.764457 -0.397977
+H 0.855525 0.493938 -0.460654
+H -0.987875 0.000000 -0.460654
+H -0.943968 0.000000 1.965000
+H 1.121766 0.000000 3.208352
+H 2.043466 0.493938 1.611920
+H 0.883818 -1.750040 -1.481319
+H -0.080384 -2.253943 0.086640
+H 2.925095 -1.797591 -0.189716
+\end{verbatim}
+\subsection*{Baker TS 18: \texttt{silyene\_insertion}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.520000
+Si 2.006545 0.000000 2.644179
+H 0.422061 0.910502 -0.450390
+H 0.459439 -0.873991 -0.461688
+H -1.051651 -0.019825 -0.354596
+H -0.547586 0.879391 1.858999
+H -0.559830 -0.877067 1.876854
+H 2.812789 -1.154016 2.187433
+H 1.220827 0.893189 1.730472
+H 1.749593 -0.143498 4.094622
+\end{verbatim}
+\subsection*{Baker TS 19: \texttt{hnccs}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+H 0.0000000000 0.0000000000 0.0000000000
+N 0.0000000000 0.0000000000 1.0100000000
+C 0.6710310000 0.0000000000 2.0048450000
+C 2.5252980000 0.0000000000 2.1507790000
+S 3.3197710000 0.0000000000 3.5049250000
+\end{verbatim}
+\subsection*{Baker TS 20: \texttt{hconh3\_cation}}
+Charge/multiplicity: \texttt{1 1}.
+\begin{verbatim}
+N 0.0000000 0.0000000 0.0000000
+C 0.0000000 0.0000000 2.0000000
+O 0.9786090 0.0000000 2.5650000
+H 0.9709210 0.0000000 -0.3438210
+H -0.9353070 0.0000000 1.4600000
+H -0.4854600 -0.8408420 -0.3438210
+H -0.4854600 0.8408420 -0.3438210
+\end{verbatim}
+\subsection*{Baker TS 21: \texttt{acrolein\_rot}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.340000
+C 1.255737 0.000000 2.065000
+O 1.784012 1.056551 2.370000
+H -0.935307 0.000000 -0.540000
+H 0.935307 0.000000 -0.540000
+H -0.935307 0.000000 1.880000
+H 1.723391 -0.935307 2.335000
+\end{verbatim}
+\subsection*{Baker TS 22: \texttt{hconhoh}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+O 0.000000 0.000000 0.000000
+C 0.000000 0.000000 1.300000
+N 1.221600 0.000000 1.744626
+O 1.464708 0.000000 3.123357
+H -0.842649 0.000000 2.007066
+H 2.450704 0.000000 3.290126
+H 1.352334 0.000000 0.250334
+\end{verbatim}
+\subsection*{Baker TS 23: \texttt{hcn\_h2}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+H 0.0000000000 0.0000000000 0.0000000000
+N 0.0000000000 0.0000000000 1.0000000000
+C 1.0392300000 0.0000000000 1.6000000000
+H 1.5430290000 0.0868240000 2.4594470000
+H 0.5092680000 0.0593310000 3.0682030000
+\end{verbatim}
+\subsection*{Baker TS 24: \texttt{h2cnh}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+H 0.0000000000 0.0000000000 0.0000000000
+N 0.0000000000 0.0000000000 1.0000000000
+C 1.0392300000 0.0000000000 1.6000000000
+H 0.1948560000 -0.9750000000 1.7625000000
+H 1.9052560000 0.0000000000 1.1000000000
+\end{verbatim}
+\subsection*{Baker TS 25: \texttt{hcnh2}}
+Charge/multiplicity: \texttt{0 1}.
+\begin{verbatim}
+C 0.000000 0.000000 0.000000
+N 0.000000 0.000000 1.350000
+H 0.965926 0.000000 -0.258819
+H -1.171123 0.676148 1.712347
+H -1.236231 -0.449951 1.828828
+\end{verbatim}
+}
+
+\bibliographystyle{achemso}
+\bibliography{archive/original_submission/references}
+
+\end{document}
